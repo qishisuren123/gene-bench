@@ -1,0 +1,30 @@
+{
+  "scenario_id": "S072_ozone_profile",
+  "domain": "atmospheric",
+  "keywords": [
+    "atmospheric",
+    "incomplete altitude coverage",
+    "json",
+    "missing data interpolation",
+    "ozone",
+    "profile",
+    "scale height fitting issues",
+    "tropopause misidentification"
+  ],
+  "summary": "This skill processes vertical ozone profiles from ozonesonde balloon measurements to extract key atmospheric parameters including tropopause identification, column integrations, and stratospheric characterization with quality control and visualization outputs.",
+  "strategy": [
+    "**Data Ingestion & Quality Control**: Load ozonesonde data (altitude, pressure, temperature, ozone) and apply quality filters to remove negative or unrealistic ozone values (>20 mPa default)",
+    "**Tropopause Detection**: Calculate temperature lapse rates and identify tropopause height using the WMO thermal definition (lapse rate <2 K/km over 2 km layer)",
+    "**Column Integration**: Compute tropospheric ozone column (surface to tropopause) and stratospheric column (tropopause to 30 km) using trapezoidal integration with unit conversion"
+  ],
+  "pitfalls": [
+    "Incomplete altitude coverage: Ensure data extends sufficiently into stratosphere (>25 km) for reliable tropopause detection and column calculations",
+    "Unit conversion errors: Ozone concentrations in mPa must be converted to Dobson Units (DU) for column integration using proper conversion factors and pressure weighting",
+    "Tropopause misidentification: Apply minimum altitude constraint (>6 km) and verify lapse rate calculation uses proper altitude intervals to avoid surface inversions"
+  ],
+  "key_concepts": [
+    "Validate input data completeness and altitude ordering before processing",
+    "Implement fallback tropopause detection methods if primary lapse rate method fails",
+    "Check for sufficient data points in stratosphere before attempting scale height calculations"
+  ]
+}

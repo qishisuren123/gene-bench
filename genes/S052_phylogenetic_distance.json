@@ -1,0 +1,30 @@
+{
+  "scenario_id": "S052_phylogenetic_distance",
+  "domain": "evolutionary_biology",
+  "keywords": [
+    "ambiguous nucleotide codes",
+    "calculator",
+    "distance",
+    "gap handling inconsistency",
+    "json",
+    "jukes-cantor overflow",
+    "phylogenetic",
+    "sequence length validation"
+  ],
+  "summary": "This skill helps create a command-line tool for computing pairwise phylogenetic distances from multiple sequence alignments using standard evolutionary distance metrics including Hamming, Jukes-Cantor, and p-distance calculations.",
+  "strategy": [
+    "**Parse input arguments** - Handle command-line arguments for alignment file, distance method, and output format options",
+    "**Load and validate sequences** - Parse FASTA format alignment data and validate sequence lengths are equal",
+    "**Preprocess alignment** - Extract sequence identifiers and convert sequences to uppercase for consistent processing"
+  ],
+  "pitfalls": [
+    "Jukes-Cantor overflow: When 4p/3 ≥ 1, the logarithm becomes undefined - fallback to uncorrected p-distance instead of crashing",
+    "Gap handling inconsistency: Don't exclude entire columns with gaps - handle gaps on a pairwise basis to maximize data usage",
+    "Sequence length validation: Unequal sequence lengths indicate invalid alignment - validate before processing to avoid index errors"
+  ],
+  "key_concepts": [
+    "Validate alignment integrity by checking all sequences have equal length",
+    "Handle mathematical edge cases in Jukes-Cantor correction with fallback to p-distance",
+    "Gracefully handle empty or malformed FASTA input with informative error messages"
+  ]
+}

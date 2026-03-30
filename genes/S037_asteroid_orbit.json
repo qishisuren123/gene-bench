@@ -1,0 +1,30 @@
+{
+  "scenario_id": "S037_asteroid_orbit",
+  "domain": "astronomy",
+  "keywords": [
+    "asteroid",
+    "calculator",
+    "coordinate system assumptions",
+    "eccentricity calculation order",
+    "elements",
+    "ellipse parameter confusion",
+    "insufficient data handling",
+    "json"
+  ],
+  "summary": "This skill enables calculation of basic orbital elements (semi-major axis, eccentricity, period) from asteroid position observations using elliptical orbit fitting and Kepler's laws of planetary motion.",
+  "strategy": [
+    "**Load and validate observation data** from JSON file containing timestamps and x,y coordinates in astronomical units",
+    "**Fit elliptical orbit** to position data using least-squares optimization to determine ellipse parameters (center, semi-axes, rotation)",
+    "**Calculate orbital elements** including semi-major axis, eccentricity, and period using Kepler's third law"
+  ],
+  "pitfalls": [
+    "Ellipse parameter confusion: Semi-major axis 'a' must be the larger of the two fitted semi-axes, not necessarily the first parameter returned by fitting",
+    "Coordinate system assumptions: Ensure the Sun is properly positioned at origin (0,0) and ellipse center offset is handled correctly",
+    "Eccentricity calculation order: Always use e = sqrt(1 - b²/a²) where a > b, otherwise you'll get complex numbers"
+  ],
+  "key_concepts": [
+    "Validate JSON structure and required fields before processing",
+    "Check for minimum number of observations (≥5 points)",
+    "Handle optimization convergence failures with multiple initial guesses"
+  ]
+}

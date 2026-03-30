@@ -1,0 +1,30 @@
+{
+  "scenario_id": "S007_data_viz",
+  "domain": "visualization",
+  "keywords": [
+    "activity",
+    "csv",
+    "empty output directory",
+    "inconsistent trial/time combinations",
+    "irregular time sampling",
+    "memory issues with large datasets",
+    "missing neuron columns",
+    "neural"
+  ],
+  "summary": "This skill helps create publication-ready visualizations of neural population activity data from CSV files, generating heatmaps and population peristimulus time histograms (PSTHs) with proper statistical representations.",
+  "strategy": [
+    "Load and validate CSV data structure (trial, time, neuron_* columns)",
+    "Reshape data into trials × time × neurons array for efficient computation",
+    "Calculate trial-averaged firing rates and population statistics (mean, SEM)"
+  ],
+  "pitfalls": [
+    "Missing neuron columns: Always filter columns with `neuron_` prefix and handle cases where no neuron columns exist",
+    "Irregular time sampling: Use `pivot_table` with aggregation to handle duplicate time points per trial",
+    "Memory issues with large datasets: Process data in chunks or use memory-efficient pandas operations instead of loading entire arrays"
+  ],
+  "key_concepts": [
+    "Validate CSV file exists and is readable before processing",
+    "Check for required columns (trial, time) and at least one neuron column",
+    "Handle missing values with appropriate interpolation or exclusion"
+  ]
+}

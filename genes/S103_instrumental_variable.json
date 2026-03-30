@@ -1,0 +1,27 @@
+{
+  "scenario_id": "S103_instrumental_variable",
+  "domain": "causal_inference",
+  "keywords": [
+    "2SLS",
+    "instrumental variable",
+    "endogeneity",
+    "first stage",
+    "F-statistic",
+    "causal effect",
+    "OLS bias"
+  ],
+  "summary": "Estimate causal effects using two-stage least squares (2SLS) to overcome endogeneity bias in observational data.",
+  "strategy": [
+    "Stage 1: Regress treatment on instrument(s) and confounders to get predicted treatment values (X_hat)",
+    "Stage 2: Regress outcome on X_hat (and confounders) to get the IV estimate of causal effect",
+    "Compute first-stage F-statistic to test instrument relevance — F < 10 indicates weak instruments"
+  ],
+  "pitfalls": [
+    "Standard errors in Stage 2 must use original X, not X_hat, for correct inference",
+    "Weak instrument bias: when F < 10, IV estimate can be more biased than OLS"
+  ],
+  "key_concepts": [
+    "IV solves endogeneity by using variation in X that comes only through Z (the instrument)",
+    "Compare IV and OLS: if IV differs substantially, endogeneity was present"
+  ]
+}

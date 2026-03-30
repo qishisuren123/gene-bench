@@ -1,0 +1,27 @@
+{
+  "scenario_id": "S111_cuda_memory",
+  "domain": "gpu_computing",
+  "keywords": [
+    "CUDA",
+    "memory allocation",
+    "peak usage",
+    "fragmentation",
+    "dtype downcast",
+    "timeline",
+    "optimization"
+  ],
+  "summary": "Analyze GPU memory allocation events to find peak usage, detect fragmentation, and suggest optimization opportunities like early frees and dtype downcasts.",
+  "strategy": [
+    "Replay allocation/free events chronologically to reconstruct the memory timeline and find peak usage point",
+    "Compute fragmentation as ratio of largest contiguous free block to total free memory at peak",
+    "Identify optimizations: tensors allocated long before last use (early-free candidates) and float64 tensors that could be float32"
+  ],
+  "pitfalls": [
+    "Track allocations by tensor_name for free matching — mismatched alloc/free pairs corrupt the timeline",
+    "Fragmentation calculation requires tracking individual allocation positions, not just total used/free"
+  ],
+  "key_concepts": [
+    "Memory efficiency = peak_used / total_GPU_memory — lower is better",
+    "dtype downcast float64→float32 saves 50% memory for tensors where precision isn't critical"
+  ]
+}

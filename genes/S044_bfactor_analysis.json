@@ -1,0 +1,30 @@
+{
+  "scenario_id": "S044_bfactor_analysis",
+  "domain": "structural_biology",
+  "keywords": [
+    "consecutive grouping logic",
+    "empty flexible regions",
+    "factor",
+    "file output permissions",
+    "invalid b-factor values",
+    "json",
+    "single-residue datasets",
+    "tool"
+  ],
+  "summary": "This skill helps create a command-line tool for analyzing B-factor (temperature factor) distributions in protein structures to identify flexible regions and assess structural reliability.",
+  "strategy": [
+    "**Convert and validate B-factor data** from comma-separated string to numpy array with error checking",
+    "**Calculate comprehensive statistics** including mean, median, standard deviation, and quartiles using numpy/scipy",
+    "**Identify flexible regions** by finding residues above 75th percentile and group consecutive positions into segments"
+  ],
+  "pitfalls": [
+    "Invalid B-factor values: Non-numeric or negative values in input data - validate and convert data types early with proper error messages",
+    "Empty flexible regions: When no residues exceed 75th percentile threshold - handle edge case by reporting \"No flexible regions identified\"",
+    "Single-residue datasets: Statistics become meaningless with insufficient data - require minimum dataset size (e.g., 5 residues)"
+  ],
+  "key_concepts": [
+    "Validate input data format and convert to float array with descriptive error messages for parsing failures",
+    "Check for minimum dataset size requirements before statistical analysis",
+    "Handle file I/O exceptions when saving JSON results and PNG plots"
+  ]
+}

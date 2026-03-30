@@ -1,0 +1,27 @@
+{
+  "scenario_id": "S108_raman_spectroscopy",
+  "domain": "spectroscopy",
+  "keywords": [
+    "Raman",
+    "baseline correction",
+    "peak detection",
+    "FWHM",
+    "Gaussian fit",
+    "wavenumber",
+    "functional group"
+  ],
+  "summary": "Analyze Raman spectra by subtracting fluorescence baseline, detecting peaks, and matching to known vibrational bands for compound identification.",
+  "strategy": [
+    "Subtract baseline using polynomial fitting (degree 5) or ALS iterative method to remove fluorescence background",
+    "Detect peaks in baseline-corrected spectrum using scipy.signal.find_peaks with prominence threshold",
+    "For each peak, compute FWHM and area via Gaussian fitting, then match position to known Raman band database"
+  ],
+  "pitfalls": [
+    "Polynomial baseline can overfit if degree is too high — use degree 5 and visually inspect",
+    "Peak assignment tolerance: Raman bands can shift ±20 cm⁻¹ from literature values depending on sample conditions"
+  ],
+  "key_concepts": [
+    "Key Raman bands: C-H stretch ~2900, C=O ~1700, C-C ~1000, O-H ~3400 cm⁻¹",
+    "FWHM from scipy peak_widths is in data points — convert to wavenumber units using spectral resolution"
+  ]
+}

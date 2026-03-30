@@ -1,0 +1,30 @@
+{
+  "scenario_id": "S054_species_accumulation",
+  "domain": "ecology",
+  "keywords": [
+    "accumulation",
+    "csv",
+    "curve",
+    "ignoring sampling effort differences",
+    "incorrect chao2 calculation",
+    "insufficient randomizations",
+    "json",
+    "overinterpreting asymptotic estimates"
+  ],
+  "summary": "This skill enables computation and analysis of species accumulation curves from ecological sampling data using sample-based rarefaction methods.",
+  "strategy": [
+    "**Generate synthetic ecological data** with realistic species abundance distributions using log-normal patterns across multiple sampling sites",
+    "**Create site-by-species occurrence matrix** representing presence/absence data for biodiversity analysis",
+    "**Compute observed accumulation curves** through multiple random site orderings to calculate mean cumulative species richness and confidence intervals"
+  ],
+  "pitfalls": [
+    "Insufficient randomizations: Using too few iterations (<50) leads to unstable confidence intervals.",
+    "Unrealistic species distributions: Using uniform distributions creates unrealistic ecological patterns.",
+    "Ignoring sampling effort differences: Comparing raw accumulation curves between studies with different site numbers."
+  ],
+  "key_concepts": [
+    "Validate that species pool size is larger than maximum species per site to prevent impossible sampling scenarios",
+    "Check for empty sites or sites with no species and handle gracefully by excluding from analysis",
+    "Implement bounds checking for rarefaction to prevent extrapolation beyond observed sample sizes"
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "scenario_id": "S112_midi_chords",
+  "domain": "music",
+  "keywords": [
+    "MIDI",
+    "chord detection",
+    "interval",
+    "triad",
+    "seventh chord",
+    "root note",
+    "key signature",
+    "transition matrix"
+  ],
+  "summary": "Detect and classify chords from MIDI note events by grouping simultaneous notes and analyzing pitch class intervals.",
+  "strategy": [
+    "Group notes by temporal proximity (within max_gap ms) to form chord candidates",
+    "Extract pitch classes (note % 12), compute pairwise intervals, and match against known chord templates",
+    "Build chord progression sequence and compute transition frequency matrix between chord types"
+  ],
+  "pitfalls": [
+    "MIDI note numbers must be converted to pitch classes (mod 12) before interval analysis",
+    "Chord inversion: same notes in different octaves form the same chord — normalize to root position first"
+  ],
+  "key_concepts": [
+    "Major triad intervals: [4, 3] semitones; Minor: [3, 4]; Dim: [3, 3]; Aug: [4, 4]",
+    "Key signature estimation: count frequency of each pitch class, match against major/minor scale templates"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "scenario_id": "S106_seismic_denoise",
+  "domain": "seismology",
+  "keywords": [
+    "bandpass filter",
+    "Butterworth",
+    "STA/LTA",
+    "P-wave",
+    "SNR",
+    "seismic",
+    "trigger detection"
+  ],
+  "summary": "Denoise seismic waveforms using Butterworth bandpass filtering and detect P-wave arrivals using STA/LTA ratio triggering.",
+  "strategy": [
+    "Design 4th-order Butterworth bandpass filter between lowcut and highcut frequencies, apply to each velocity component",
+    "Compute STA/LTA ratio: short-term average amplitude / long-term average amplitude in sliding windows",
+    "Trigger P-wave detection where STA/LTA exceeds 3.0, compute SNR improvement as ratio of signal power before/after filtering"
+  ],
+  "pitfalls": [
+    "Sampling rate must be correctly determined from time column spacing for proper filter frequency normalization",
+    "STA and LTA windows must not overlap with signal onset for accurate trigger timing"
+  ],
+  "key_concepts": [
+    "Butterworth filter provides maximally flat frequency response in the passband",
+    "STA/LTA is the standard seismic trigger: STA captures signal onset, LTA captures background noise level"
+  ]
+}

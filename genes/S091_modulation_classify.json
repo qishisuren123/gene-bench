@@ -1,0 +1,30 @@
+{
+  "scenario_id": "S091_modulation_classify",
+  "domain": "signal_processing",
+  "keywords": [
+    "classification",
+    "digital",
+    "frequency offset corruption",
+    "hdf5",
+    "insufficient symbol sampling",
+    "modulation",
+    "noise floor confusion",
+    "phase ambiguity in psk signals"
+  ],
+  "summary": "This skill enables classification of digital modulation schemes (BPSK, QPSK, 8PSK, 16QAM, 64QAM) from complex-valued IQ sample data using signal processing feature extraction and machine learning classification techniques.",
+  "strategy": [
+    "**Load and preprocess IQ data**: Read HDF5 files containing complex IQ samples, apply DC removal, normalization, and automatic gain control",
+    "**Extract signal features**: Compute instantaneous amplitude/phase statistics, constellation metrics, spectral features, higher-order moments, and zero-crossing rates",
+    "**Generate constellation diagrams**: Create scatter plots of normalized IQ samples and save visualization for each signal"
+  ],
+  "pitfalls": [
+    "Phase ambiguity in PSK signals: PSK constellations can appear rotated due to carrier phase offset.",
+    "Power normalization inconsistency: Different signals may have vastly different power levels.",
+    "Frequency offset corruption: Carrier frequency offset causes constellation rotation over time."
+  ],
+  "key_concepts": [
+    "Validate HDF5 file structure and complex data types before processing",
+    "Handle missing or corrupted signal datasets gracefully with warning messages",
+    "Implement bounds checking for feature extraction to avoid division by zero or infinite values"
+  ]
+}

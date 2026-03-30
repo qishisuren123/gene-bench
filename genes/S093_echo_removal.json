@@ -1,0 +1,30 @@
+{
+  "scenario_id": "S093_echo_removal",
+  "domain": "signal_processing",
+  "keywords": [
+    "adaptive",
+    "audio",
+    "autocorrelation window too short",
+    "cancellation",
+    "echo",
+    "edge effects in filtering",
+    "false peak detection",
+    "json"
+  ],
+  "summary": "This skill implements adaptive echo cancellation using autocorrelation analysis and digital signal processing techniques to remove delayed echo artifacts from synthetic audio recordings, with quality assessment and visualization capabilities.",
+  "strategy": [
+    "**Load and validate audio data** - Read .npy file containing normalized 1D audio signal and verify format",
+    "**Perform autocorrelation analysis** - Calculate normalized autocorrelation to identify echo delay and attenuation characteristics",
+    "**Detect echo parameters** - Find secondary peaks in autocorrelation to determine delay (samples) and attenuation factor"
+  ],
+  "pitfalls": [
+    "Autocorrelation window too short: Use at least 2x expected maximum delay to capture echo peaks properly",
+    "False peak detection: Filter autocorrelation results and use minimum peak prominence to avoid noise artifacts",
+    "Over-cancellation artifacts: Limit attenuation factor estimation to realistic range (0.2-0.7) to prevent signal distortion"
+  ],
+  "key_concepts": [
+    "Validate input signal format and range before processing",
+    "Handle cases where no significant echo is detected (return original signal)",
+    "Implement bounds checking for delay and attenuation parameters"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "scenario_id": "S107_regime_switch",
+  "domain": "finance",
+  "keywords": [
+    "regime",
+    "structural break",
+    "volatility",
+    "log return",
+    "rolling statistics",
+    "transition matrix",
+    "Sharpe ratio"
+  ],
+  "summary": "Detect volatility regime switches in financial time series using rolling statistics and classify into low-vol, high-vol, and crisis regimes.",
+  "strategy": [
+    "Compute log returns from price series, then calculate rolling mean and volatility with specified window size",
+    "Detect change points where rolling volatility changes by >2x between adjacent non-overlapping windows",
+    "Classify each regime by comparing its volatility to the median: low_vol, high_vol, or crisis (>2x median)"
+  ],
+  "pitfalls": [
+    "Log returns: use log(P_t/P_{t-1}), not simple returns, for better statistical properties",
+    "Rolling window at series boundaries produces NaN — handle by starting regime detection after full window is available"
+  ],
+  "key_concepts": [
+    "Annualized Sharpe ratio = (mean_daily_return * 252) / (daily_vol * sqrt(252))",
+    "Transition matrix: P(regime_j | current_regime_i) estimated from observed transitions"
+  ]
+}

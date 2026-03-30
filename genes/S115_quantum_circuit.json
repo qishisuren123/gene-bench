@@ -1,0 +1,28 @@
+{
+  "scenario_id": "S115_quantum_circuit",
+  "domain": "quantum_computing",
+  "keywords": [
+    "qubit",
+    "state vector",
+    "Hadamard",
+    "CNOT",
+    "unitary",
+    "tensor product",
+    "measurement",
+    "entanglement"
+  ],
+  "summary": "Simulate quantum circuits by applying gate unitary matrices to a state vector and computing measurement probabilities for each basis state.",
+  "strategy": [
+    "Initialize 2^n state vector to |0...0>, then for each gate build the full unitary using tensor products with identity",
+    "For controlled gates (CNOT, CZ): construct the controlled unitary using projectors |0><0|⊗I + |1><1|⊗U on control/target",
+    "Compute measurement probabilities P(outcome) = |amplitude|² and sample shots according to this distribution"
+  ],
+  "pitfalls": [
+    "Qubit ordering convention matters: decide if qubit 0 is MSB or LSB and be consistent throughout",
+    "For non-adjacent CNOT, either implement SWAP gates or directly construct the sparse controlled unitary"
+  ],
+  "key_concepts": [
+    "Hadamard creates superposition: H|0> = (|0>+|1>)/√2; CNOT creates entanglement: CNOT(H|0>⊗|0>) = (|00>+|11>)/√2",
+    "State vector has 2^n complex amplitudes; probabilities must sum to 1.0"
+  ]
+}

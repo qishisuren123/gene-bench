@@ -1,0 +1,30 @@
+{
+  "scenario_id": "S096_network_influence",
+  "domain": "network",
+  "keywords": [
+    "csv",
+    "influence",
+    "json",
+    "memory issues with large networks",
+    "missing interaction types",
+    "network",
+    "self-interactions contamination",
+    "social"
+  ],
+  "summary": "This skill helps analyze social network interaction data to identify influential users by computing weighted influence scores, network centrality measures, and combined influence metrics.",
+  "strategy": [
+    "**Parse and validate interaction data** - Load CSV/JSON data containing user_id, target_user, interaction_type, and timestamp fields",
+    "**Calculate weighted influence scores** - Apply interaction weights (share=3, comment=2, like=1) to compute each user's outgoing influence",
+    "**Compute degree centrality** - Calculate normalized centrality based on total unique connections (incoming + outgoing)"
+  ],
+  "pitfalls": [
+    "Self-interactions contamination: Including users interacting with themselves inflates centrality scores.",
+    "Timestamp parsing inconsistencies: Mixed date formats cause analysis errors.",
+    "Zero-division in normalization: Networks with single users cause division by zero."
+  ],
+  "key_concepts": [
+    "Validate required columns exist in input data before processing",
+    "Handle missing timestamps by using median timestamp or current date",
+    "Skip malformed records and log warnings rather than crashing"
+  ]
+}

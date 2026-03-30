@@ -1,0 +1,27 @@
+{
+  "scenario_id": "S113_inventory_reorder",
+  "domain": "supply_chain",
+  "keywords": [
+    "EOQ",
+    "reorder point",
+    "safety stock",
+    "lead time",
+    "service level",
+    "demand forecasting",
+    "holding cost"
+  ],
+  "summary": "Compute optimal inventory reorder points and Economic Order Quantities (EOQ) from historical demand data with safety stock for target service level.",
+  "strategy": [
+    "Compute demand statistics per product: mean, std, and coefficient of variation to choose demand distribution",
+    "Calculate EOQ using the Wilson formula: Q* = sqrt(2*D*K/h) where D=annual demand, K=ordering cost, h=holding cost",
+    "Determine reorder point: ROP = mean_demand_during_lead_time + z*std_demand_during_lead_time where z=norm.ppf(service_level)"
+  ],
+  "pitfalls": [
+    "Demand during lead time variance combines both demand and lead time variability: Var = LT*Var(D) + D²*Var(LT)",
+    "EOQ assumes constant demand rate — for highly variable demand, adjust with demand coefficient of variation"
+  ],
+  "key_concepts": [
+    "Safety stock = z-score * std_demand_during_lead_time provides buffer against stockouts",
+    "Total annual cost = (D/Q)*K + (Q/2)*h + stockout_cost for optimization"
+  ]
+}

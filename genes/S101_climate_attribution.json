@@ -1,0 +1,28 @@
+{
+  "scenario_id": "S101_climate_attribution",
+  "domain": "climate_science",
+  "keywords": [
+    "attribution",
+    "forcing",
+    "regression",
+    "ridge",
+    "bayesian",
+    "temperature anomaly",
+    "GHG",
+    "r-squared"
+  ],
+  "summary": "Perform climate change attribution by regressing observed temperature anomalies against individual forcing factors to determine each factor's contribution percentage.",
+  "strategy": [
+    "Set up the regression with forcing factors as predictors and observed temperature as response, choosing OLS/Ridge/Bayesian based on method parameter",
+    "Compute attribution fractions by normalizing each coefficient's contribution to total explained warming",
+    "Calculate R² for goodness-of-fit and residual fraction for unexplained variability"
+  ],
+  "pitfalls": [
+    "Multicollinearity: forcing factors may be correlated, causing unstable OLS coefficients — Ridge regularization helps",
+    "Attribution fractions should be computed from absolute coefficient contributions, not raw coefficients"
+  ],
+  "key_concepts": [
+    "Two-stage attribution: first fit regression, then decompose predicted values by forcing factor",
+    "Bayesian approach uses prior precision to regularize, producing posterior mean as estimate"
+  ]
+}

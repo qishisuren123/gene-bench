@@ -1,0 +1,30 @@
+{
+  "scenario_id": "S090_noise_reduction",
+  "domain": "signal_processing",
+  "keywords": [
+    "adaptive",
+    "algorithm",
+    "cancellation",
+    "incorrect delay compensation",
+    "insufficient filter length",
+    "json",
+    "least mean squares",
+    "noise"
+  ],
+  "summary": "This skill implements adaptive noise cancellation using the Least Mean Squares (LMS) algorithm to remove correlated noise from audio signals while preserving the original signal components.",
+  "strategy": [
+    "**Parse CLI arguments** and validate step size (0.001-0.1) and filter length (8-128 taps) parameters",
+    "**Generate composite test signal** with 440Hz and 880Hz sine waves plus broadband noise at 8kHz sampling rate for 2 seconds",
+    "**Create correlated reference noise** by applying delay and scaling to noise components that correlate with primary signal noise"
+  ],
+  "pitfalls": [
+    "Step size too large: Causes filter instability and divergence.",
+    "Insufficient filter length: Results in poor noise estimation.",
+    "Poor reference noise correlation: Leads to ineffective cancellation."
+  ],
+  "key_concepts": [
+    "Validate all file paths are writable before processing",
+    "Check signal lengths match between primary and reference inputs",
+    "Implement coefficient bounds to prevent filter instability"
+  ]
+}

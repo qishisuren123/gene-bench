@@ -1,0 +1,28 @@
+{
+  "scenario_id": "S109_hdf5_chunked",
+  "domain": "data_storage",
+  "keywords": [
+    "HDF5",
+    "chunking",
+    "gzip",
+    "compression",
+    "h5py",
+    "dataset",
+    "metadata",
+    "round-trip"
+  ],
+  "summary": "Convert large CSV data to chunked, compressed HDF5 format with proper metadata and efficient access patterns using h5py.",
+  "strategy": [
+    "Auto-detect column types from CSV, create separate HDF5 datasets for numeric (float64) and string (variable-length) columns",
+    "Set chunk size and compression (gzip/lzf) on each dataset for efficient partial reads and storage savings",
+    "Store column metadata as HDF5 attributes and create a _metadata group with file provenance information"
+  ],
+  "pitfalls": [
+    "h5py variable-length strings require special dtype: h5py.special_dtype(vlen=str)",
+    "Chunk size should match typical read patterns — too small causes overhead, too large wastes memory"
+  ],
+  "key_concepts": [
+    "HDF5 chunking enables partial I/O: only chunks overlapping the requested slice are read from disk",
+    "Compression is applied per-chunk: gzip gives best ratio, lzf gives best speed"
+  ]
+}

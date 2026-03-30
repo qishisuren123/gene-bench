@@ -1,0 +1,30 @@
+{
+  "scenario_id": "S074_heat_index",
+  "domain": "meteorology",
+  "keywords": [
+    "climatological window edge effects",
+    "csv",
+    "detection",
+    "heat",
+    "heat index formula complexity",
+    "heat wave merging logic",
+    "index",
+    "json"
+  ],
+  "summary": "This skill enables processing of atmospheric temperature and humidity data to calculate accurate heat index time series using the National Weather Service formula, detect heat wave events based on climatological thresholds, and perform comprehensive statistical analysis including trend detection and return period estimation.",
+  "strategy": [
+    "**Data Loading and Validation**: Load temperature and humidity CSV files, validate datetime formats, check for missing values, and ensure temporal alignment between datasets",
+    "**Heat Index Calculation**: Implement the full NWS heat index formula with all adjustment factors, handling edge cases for extreme humidity conditions and temperature ranges",
+    "**Climatological Baseline Construction**: Build rolling climatology using specified baseline years with 15-day windows centered on each day-of-year to calculate percentile thresholds"
+  ],
+  "pitfalls": [
+    "Heat Index Formula Complexity: The NWS formula has multiple adjustment factors that are often omitted.",
+    "Climatological Window Edge Effects: When calculating day-of-year climatology, handle year boundaries properly by wrapping the 15-day window (e.g., Jan 1 includes Dec 24-31 from previous years)",
+    "Heat Wave Merging Logic: Single-day breaks in heat waves should be merged, but be careful not to merge events with longer gaps."
+  ],
+  "key_concepts": [
+    "Validate input file formats and handle CSV parsing errors with informative messages",
+    "Check for sufficient overlapping data between temperature and humidity time series",
+    "Handle mathematical edge cases in heat index calculation (extreme values, division by zero)"
+  ]
+}

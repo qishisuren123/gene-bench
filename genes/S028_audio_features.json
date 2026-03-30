@@ -1,0 +1,30 @@
+{
+  "scenario_id": "S028_audio_features",
+  "domain": "audio",
+  "keywords": [
+    "audio",
+    "csv",
+    "dct coefficient indexing",
+    "extraction",
+    "feature",
+    "fft",
+    "frame boundary handling",
+    "json"
+  ],
+  "summary": "This skill enables extraction of frame-level audio features (STFT, MFCCs, ZCR, RMS energy) from synthetic audio signals stored in NPZ format, with manual implementation of mel filterbank for MFCC computation.",
+  "strategy": [
+    "Load audio signals, sample rate, and labels from the NPZ file",
+    "For each signal, apply windowing to extract overlapping frames based on frame_size and hop_size",
+    "Compute STFT magnitude spectrogram for each frame using numpy FFT"
+  ],
+  "pitfalls": [
+    "Mel scale conversion errors: Use correct mel-to-Hz formula: `hz = 700 * (10^(mel/2595) - 1)` and inverse.",
+    "Frame boundary handling: Last frame may be shorter than frame_size.",
+    "STFT frequency bin mapping: Ensure mel filterbank maps to correct frequency bins."
+  ],
+  "key_concepts": [
+    "Validate NPZ file contains required keys ('signals', 'sample_rate', 'labels') with appropriate shapes",
+    "Check that frame_size and hop_size are positive integers and frame_size > hop_size",
+    "Handle edge cases where signal length is shorter than frame_size"
+  ]
+}

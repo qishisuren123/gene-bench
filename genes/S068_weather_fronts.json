@@ -1,0 +1,30 @@
+{
+  "scenario_id": "S068_weather_fronts",
+  "domain": "meteorology",
+  "keywords": [
+    "connected component labeling errors",
+    "coordinate system confusion",
+    "detection",
+    "edge effects in gradients",
+    "front",
+    "gradient",
+    "hdf5",
+    "incorrect gradient scaling"
+  ],
+  "summary": "This skill enables detection of weather fronts by analyzing spatial temperature gradients in atmospheric data.",
+  "strategy": [
+    "**Load atmospheric data** from HDF5 file containing temperature grids, coordinates, and spatial metadata",
+    "**Apply Gaussian smoothing** to temperature field to reduce measurement noise while preserving front structures",
+    "**Calculate temperature gradients** in both spatial directions using central differences, converting to physical units (°C/km)"
+  ],
+  "pitfalls": [
+    "Incorrect gradient scaling: Forgetting to convert gradient units from °C/grid_point to °C/km using the grid_spacing parameter",
+    "Edge effects in gradients: Not handling array boundaries properly when computing central differences, leading to artifacts at data edges",
+    "Over-smoothing temperature data: Using excessive Gaussian smoothing that removes genuine meteorological front structures"
+  ],
+  "key_concepts": [
+    "Validate HDF5 file structure and required datasets before processing",
+    "Check for NaN/invalid values in temperature data and handle with masking",
+    "Ensure gradient threshold and smoothing parameters are physically reasonable"
+  ]
+}

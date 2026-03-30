@@ -1,0 +1,28 @@
+{
+  "scenario_id": "S110_log_regex",
+  "domain": "text_processing",
+  "keywords": [
+    "regex",
+    "Apache log",
+    "parsing",
+    "status code",
+    "anomaly",
+    "IP",
+    "request rate",
+    "error rate"
+  ],
+  "summary": "Parse server access logs using format-specific regex patterns to extract structured metrics, detect anomalies, and compute traffic statistics.",
+  "strategy": [
+    "Define regex patterns per format: Apache combined log captures IP, timestamp, method, URL, status, size in named groups",
+    "Iterate lines with compiled regex, track parsed/failed counts, aggregate into status distribution and per-IP/URL counters",
+    "Detect anomalies: IPs exceeding request threshold and URLs with abnormally high error rates"
+  ],
+  "pitfalls": [
+    "Regex must handle edge cases: missing response size (shown as '-'), URLs with query strings, IPv6 addresses",
+    "Timestamp parsing varies between formats — Apache uses [dd/Mon/yyyy:HH:MM:SS +ZZZZ]"
+  ],
+  "key_concepts": [
+    "Compiled regex (re.compile) is much faster than per-line re.match for large log files",
+    "Error rate = count(4xx + 5xx) / total_requests"
+  ]
+}

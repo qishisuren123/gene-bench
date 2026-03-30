@@ -1,0 +1,30 @@
+{
+  "scenario_id": "S005_protein_parse",
+  "domain": "bioinformatics",
+  "keywords": [
+    "argparse",
+    "csv",
+    "csv encoding issues",
+    "go term extraction complexity",
+    "json",
+    "multiple gene names",
+    "nested field access errors",
+    "pandas"
+  ],
+  "summary": "This skill helps parse SwissProt protein database entries from JSON format and extract structured biological information into CSV format with comprehensive error handling for missing fields.",
+  "strategy": [
+    "Load and validate the JSON file structure containing protein entries",
+    "Iterate through each protein entry and extract: accession, protein_name, gene_name, organism, sequence_length, number_of_features, and GO_terms",
+    "Handle missing or malformed fields by applying default values (empty strings for text, 0 for counts)"
+  ],
+  "pitfalls": [
+    "Nested field access errors: SwissProt JSON has deeply nested structures (protein.recommendedName.fullName).",
+    "Multiple gene names: Gene field can contain multiple names or be missing.",
+    "GO term extraction complexity: dbReferences contains mixed reference types."
+  ],
+  "key_concepts": [
+    "Wrap JSON loading in try-except to catch malformed files and provide clear error messages",
+    "Use safe dictionary navigation with nested",
+    "Validate that required output directory exists before writing CSV file"
+  ]
+}

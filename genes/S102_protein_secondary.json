@@ -1,0 +1,28 @@
+{
+  "scenario_id": "S102_protein_secondary",
+  "domain": "bioinformatics",
+  "keywords": [
+    "Chou-Fasman",
+    "GOR",
+    "helix",
+    "sheet",
+    "coil",
+    "propensity",
+    "sliding window",
+    "FASTA"
+  ],
+  "summary": "Predict protein secondary structure (H/E/C) from amino acid sequence using residue propensity tables and sliding window nucleation.",
+  "strategy": [
+    "Build propensity lookup tables for helix and sheet from known values, then scan with sliding windows for nucleation sites",
+    "Extend nucleation regions along the sequence while average propensity exceeds threshold",
+    "Assign remaining unassigned residues as coil (C) and compute per-sequence composition statistics"
+  ],
+  "pitfalls": [
+    "Window size matters: helix nucleation uses 6-residue windows, sheet uses 5-residue windows",
+    "Handle sequence edges where window extends beyond bounds by padding or truncating"
+  ],
+  "key_concepts": [
+    "Propensity values > 1.0 indicate preference for that structure type",
+    "Nucleation-extension model: find seed regions first, then grow them"
+  ]
+}

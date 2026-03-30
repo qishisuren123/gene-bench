@@ -1,0 +1,30 @@
+{
+  "scenario_id": "S030_fossil_morpho",
+  "domain": "paleontology",
+  "keywords": [
+    "argparse",
+    "csv",
+    "fossil",
+    "json",
+    "json serialization of numpy types",
+    "missing measurement validation",
+    "morphometric",
+    "pca"
+  ],
+  "summary": "This skill enables comprehensive morphometric analysis of fossil specimen measurements, including shape index calculations, principal component analysis with eigen-decomposition, and taxonomic/temporal grouping statistics for paleontological research.",
+  "strategy": [
+    "Load and validate fossil specimen data with required columns (specimen_id, taxon, length_mm, width_mm, height_mm, mass_g, formation, epoch)",
+    "Calculate morphometric shape indices: elongation, flatness, Krumbein sphericity, ellipsoidal volume, and density",
+    "Perform PCA on standardized measurements using numpy eigen-decomposition of covariance matrix"
+  ],
+  "pitfalls": [
+    "Missing measurement validation: Always check for negative values or zeros in dimensions before calculating shape indices, as these indicate measurement errors",
+    "Volume unit conversion errors: Remember to convert mm³ to cm³ (divide by 1000) before calculating density to get g/cm³",
+    "PCA standardization order: Apply z-score standardization before computing covariance matrix, not after eigen-decomposition"
+  ],
+  "key_concepts": [
+    "Validate CSV structure and required columns before processing",
+    "Handle division by zero in shape calculations by setting invalid results to NaN",
+    "Check for successful eigen-decomposition convergence and handle degenerate covariance matrices"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "scenario_id": "S105_community_detection",
+  "domain": "graph_analysis",
+  "keywords": [
+    "label propagation",
+    "modularity",
+    "Louvain",
+    "community",
+    "overlapping",
+    "adjacency",
+    "density"
+  ],
+  "summary": "Detect overlapping communities in networks using label propagation or greedy modularity optimization without external graph libraries.",
+  "strategy": [
+    "Build adjacency list representation from edge list, then initialize each node with a unique community label",
+    "Iteratively update labels: each node adopts the most frequent label among its neighbors with random tie-breaking",
+    "Compute modularity Q to evaluate partition quality: Q = (1/2m) * sum[(A_ij - k_i*k_j/2m) * delta(c_i, c_j)]"
+  ],
+  "pitfalls": [
+    "Label propagation can oscillate — use asynchronous updates (random node order each iteration) and convergence check",
+    "For overlapping communities, allow nodes to belong to multiple communities if >30% of neighbors share that label"
+  ],
+  "key_concepts": [
+    "Modularity measures how much better the partition is compared to random graph with same degree sequence",
+    "Per-community density = 2 * internal_edges / (size * (size-1)) for undirected graphs"
+  ]
+}
