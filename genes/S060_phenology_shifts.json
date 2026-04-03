@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S060_phenology_shifts",
-  "domain": "ecology",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S060_phenology_shifts",
+  "category": "optimize",
+  "signals_match": [
     "climate lag oversimplification",
     "detection",
     "ignoring autocorrelation",
@@ -12,19 +14,28 @@
     "outlier masking real shifts"
   ],
   "summary": "This skill enables detection and quantification of phenological shifts in long-term ecological time series data using advanced statistical methods including change-point detection, trend analysis, and climate correlation assessment.",
-  "strategy": [
-    "**Data Ingestion and Validation**: Load time series data, validate required columns (year, DOY, temperature, precipitation), and perform initial data quality checks",
-    "**Data Preprocessing**: Handle missing values using interpolation/imputation, detect and treat outliers using IQR or z-score methods, and normalize climate variables",
-    "**Change-Point Detection**: Apply PELT algorithm and Mann-Kendall trend test to identify significant temporal shifts in phenological timing"
-  ],
-  "pitfalls": [
-    "Insufficient data length: Phenological analysis requires minimum 15-20 years of data for reliable change-point detection.",
-    "Ignoring autocorrelation: Time series data often exhibits temporal autocorrelation that can inflate significance.",
-    "Climate lag oversimplification: Assuming immediate climate effects without considering biological response delays."
-  ],
-  "key_concepts": [
+  "preconditions": [
     "Validate input data format and required columns before processing",
     "Handle missing climate data using linear interpolation with maximum gap limits",
     "Implement fallback methods when primary algorithms fail (e"
-  ]
+  ],
+  "strategy": [
+    "**Data Ingestion and Validation**: Load time series data, validate required columns (year, DOY, temperature, precipitation), and perform initial data quality checks",
+    "**Data Preprocessing**: Handle missing values using interpolation/imputation, detect and treat outliers using IQR or z-score methods, and normalize climate variables",
+    "**Change-Point Detection**: Apply PELT algorithm and Mann-Kendall trend test to identify significant temporal shifts in phenological timing",
+    "AVOID: Insufficient data length: Phenological analysis requires minimum 15-20 years of data for reliable change-point detection.",
+    "AVOID: Ignoring autocorrelation: Time series data often exhibits temporal autocorrelation that can inflate significance.",
+    "AVOID: Climate lag oversimplification: Assuming immediate climate effects without considering biological response delays."
+  ],
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S060_phenology_shifts/"
+  ],
+  "epigenetic_marks": [
+    "domain:ecology"
+  ],
+  "asset_id": "sha256:131e936237ca97b7a973dc568e8ff9fb0a35fbaf9d914179375033115528e0ec"
 }

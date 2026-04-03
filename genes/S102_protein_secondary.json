@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S102_protein_secondary",
-  "domain": "bioinformatics",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S102_protein_secondary",
+  "category": "optimize",
+  "signals_match": [
     "Chou-Fasman",
     "GOR",
     "helix",
@@ -12,17 +14,26 @@
     "FASTA"
   ],
   "summary": "Predict protein secondary structure (H/E/C) from amino acid sequence using residue propensity tables and sliding window nucleation.",
+  "preconditions": [
+    "Propensity values > 1.0 indicate preference for that structure type",
+    "Nucleation-extension model: find seed regions first, then grow them"
+  ],
   "strategy": [
     "Build propensity lookup tables for helix and sheet from known values, then scan with sliding windows for nucleation sites",
     "Extend nucleation regions along the sequence while average propensity exceeds threshold",
-    "Assign remaining unassigned residues as coil (C) and compute per-sequence composition statistics"
+    "Assign remaining unassigned residues as coil (C) and compute per-sequence composition statistics",
+    "AVOID: Window size matters: helix nucleation uses 6-residue windows, sheet uses 5-residue windows",
+    "AVOID: Handle sequence edges where window extends beyond bounds by padding or truncating"
   ],
-  "pitfalls": [
-    "Window size matters: helix nucleation uses 6-residue windows, sheet uses 5-residue windows",
-    "Handle sequence edges where window extends beyond bounds by padding or truncating"
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S102_protein_secondary/"
   ],
-  "key_concepts": [
-    "Propensity values > 1.0 indicate preference for that structure type",
-    "Nucleation-extension model: find seed regions first, then grow them"
-  ]
+  "epigenetic_marks": [
+    "domain:bioinformatics"
+  ],
+  "asset_id": "sha256:b3579325f8e95f63897f6ba2bd42c544b25fdee13b8b03725ea1d11afb63635b"
 }

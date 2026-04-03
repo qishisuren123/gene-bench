@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S002_spike_behavior",
-  "domain": "neuroscience",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S002_spike_behavior",
+  "category": "optimize",
+  "signals_match": [
     "bin edge vs center confusion",
     "empty trial handling",
     "hdf5",
@@ -12,19 +14,28 @@
     "memory issues with large datasets"
   ],
   "summary": "This skill standardizes neural spike and behavior data from MATLAB files into a unified trial-based HDF5 format with consistent temporal binning and quality validation for neuroscience analysis pipelines.",
-  "strategy": [
-    "Load MATLAB data and extract spike times, behavior data, and trial metadata using scipy.io",
-    "Filter trials to include only successful trials based on trial_success boolean array",
-    "For each successful trial, create uniform time bins from trial start to end using specified bin size"
-  ],
-  "pitfalls": [
-    "MATLAB cell array handling: Use `.flatten()` and check for empty cells when processing spike_times cell arrays, as some units may have no spikes in certain periods",
-    "Time alignment errors: Ensure trial start/end times are within the bounds of time_frame array before interpolation to avoid extrapolation artifacts",
-    "Bin edge vs center confusion: Use `bins[:-1] + bin_size/2` for bin centers when interpolating behavior data to match histogram bin assignments"
-  ],
-  "key_concepts": [
+  "preconditions": [
     "Validate input file exists and contains required fields before processing",
     "Handle empty spike trains gracefully by creating zero-filled arrays with correct dimensions",
     "Catch interpolation errors when behavior data has gaps and implement forward-fill or linear interpolation fallbacks"
-  ]
+  ],
+  "strategy": [
+    "Load MATLAB data and extract spike times, behavior data, and trial metadata using scipy.io",
+    "Filter trials to include only successful trials based on trial_success boolean array",
+    "For each successful trial, create uniform time bins from trial start to end using specified bin size",
+    "AVOID: MATLAB cell array handling: Use `.flatten()` and check for empty cells when processing spike_times cell arrays, as some units may have no spikes in certain periods",
+    "AVOID: Time alignment errors: Ensure trial start/end times are within the bounds of time_frame array before interpolation to avoid extrapolation artifacts",
+    "AVOID: Bin edge vs center confusion: Use `bins[:-1] + bin_size/2` for bin centers when interpolating behavior data to match histogram bin assignments"
+  ],
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S002_spike_behavior/"
+  ],
+  "epigenetic_marks": [
+    "domain:neuroscience"
+  ],
+  "asset_id": "sha256:538b05c7198249646a72b2cac10e6aeaa16a35aaa583695cd41f4255cc114b00"
 }

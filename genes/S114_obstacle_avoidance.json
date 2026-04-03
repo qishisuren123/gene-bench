@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S114_obstacle_avoidance",
-  "domain": "robotics",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S114_obstacle_avoidance",
+  "category": "optimize",
+  "signals_match": [
     "RRT",
     "potential field",
     "path planning",
@@ -11,17 +13,26 @@
     "smoothing"
   ],
   "summary": "Plan collision-free robot trajectories using RRT (tree-based random sampling) or potential field (gradient descent) methods in 2D environments.",
+  "preconditions": [
+    "Line-circle collision: compute perpendicular distance from circle center to line segment, compare with radius",
+    "Path smoothness measured by total curvature: sum of angle changes between consecutive segments"
+  ],
   "strategy": [
     "For RRT: grow tree by sampling random points, extending nearest node toward sample with collision check along the segment",
     "Collision check: test line segment against each circular obstacle using closest-point-to-line-segment distance",
-    "Post-process path: attempt shortcutting between non-adjacent waypoints to smooth and shorten the trajectory"
+    "Post-process path: attempt shortcutting between non-adjacent waypoints to smooth and shorten the trajectory",
+    "AVOID: RRT step_size too large skips narrow passages; too small makes tree grow slowly — balance with environment scale",
+    "AVOID: Potential field local minima: add random perturbation or switch to RRT when gradient descent stalls"
   ],
-  "pitfalls": [
-    "RRT step_size too large skips narrow passages; too small makes tree grow slowly — balance with environment scale",
-    "Potential field local minima: add random perturbation or switch to RRT when gradient descent stalls"
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S114_obstacle_avoidance/"
   ],
-  "key_concepts": [
-    "Line-circle collision: compute perpendicular distance from circle center to line segment, compare with radius",
-    "Path smoothness measured by total curvature: sum of angle changes between consecutive segments"
-  ]
+  "epigenetic_marks": [
+    "domain:robotics"
+  ],
+  "asset_id": "sha256:9f818a197acd42e6b559cfdce35515a860431da5485c3957883e175c42094929"
 }

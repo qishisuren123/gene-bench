@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S109_hdf5_chunked",
-  "domain": "data_storage",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S109_hdf5_chunked",
+  "category": "optimize",
+  "signals_match": [
     "HDF5",
     "chunking",
     "gzip",
@@ -12,17 +14,26 @@
     "round-trip"
   ],
   "summary": "Convert large CSV data to chunked, compressed HDF5 format with proper metadata and efficient access patterns using h5py.",
+  "preconditions": [
+    "HDF5 chunking enables partial I/O: only chunks overlapping the requested slice are read from disk",
+    "Compression is applied per-chunk: gzip gives best ratio, lzf gives best speed"
+  ],
   "strategy": [
     "Auto-detect column types from CSV, create separate HDF5 datasets for numeric (float64) and string (variable-length) columns",
     "Set chunk size and compression (gzip/lzf) on each dataset for efficient partial reads and storage savings",
-    "Store column metadata as HDF5 attributes and create a _metadata group with file provenance information"
+    "Store column metadata as HDF5 attributes and create a _metadata group with file provenance information",
+    "AVOID: h5py variable-length strings require special dtype: h5py.special_dtype(vlen=str)",
+    "AVOID: Chunk size should match typical read patterns — too small causes overhead, too large wastes memory"
   ],
-  "pitfalls": [
-    "h5py variable-length strings require special dtype: h5py.special_dtype(vlen=str)",
-    "Chunk size should match typical read patterns — too small causes overhead, too large wastes memory"
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S109_hdf5_chunked/"
   ],
-  "key_concepts": [
-    "HDF5 chunking enables partial I/O: only chunks overlapping the requested slice are read from disk",
-    "Compression is applied per-chunk: gzip gives best ratio, lzf gives best speed"
-  ]
+  "epigenetic_marks": [
+    "domain:data_storage"
+  ],
+  "asset_id": "sha256:26f059a0df6659b362d2b4848db5f0483466b1b31df55c86f51a08056fbe798e"
 }

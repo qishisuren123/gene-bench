@@ -15,6 +15,12 @@ venv/
 # 数据（实验结果文件较大，按需单独下载）
 data/budget_log.jsonl
 
+# 运行脚本（含API key）
+run_all_remaining.sh
+
+# 日志
+logs/
+
 # IDE
 .vscode/
 .idea/

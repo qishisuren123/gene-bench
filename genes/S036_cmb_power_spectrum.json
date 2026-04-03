@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S036_cmb_power_spectrum",
-  "domain": "cosmology",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S036_cmb_power_spectrum",
+  "category": "optimize",
+  "signals_match": [
     "angular",
     "cosmic microwave background",
     "incorrect healpix pixel ordering",
@@ -12,15 +14,24 @@
     "spectrum"
   ],
   "summary": "This skill enables computation of angular power spectra from Cosmic Microwave Background (CMB) temperature maps using spherical harmonic decomposition.",
+  "preconditions": [],
   "strategy": [
     "**Load and validate CMB temperature map** from NumPy array file, ensuring proper HEALPix format and μK units",
     "**Determine map parameters** including NSIDE resolution and maximum multipole ℓ_max based on pixel count",
-    "**Perform spherical harmonic decomposition** to extract a_ℓm coefficients using simplified discrete transform"
+    "**Perform spherical harmonic decomposition** to extract a_ℓm coefficients using simplified discrete transform",
+    "AVOID: Incorrect HEALPix pixel ordering: Always verify RING vs NESTED pixel schemes affect spherical harmonic transforms",
+    "AVOID: Units confusion: Ensure temperature data is in μK and power spectrum output is in μK² units throughout",
+    "AVOID: Multipole range errors: ℓ_max must not exceed √(N_pixels/12) to avoid aliasing in the spherical harmonic transform"
   ],
-  "pitfalls": [
-    "Incorrect HEALPix pixel ordering: Always verify RING vs NESTED pixel schemes affect spherical harmonic transforms",
-    "Units confusion: Ensure temperature data is in μK and power spectrum output is in μK² units throughout",
-    "Multipole range errors: ℓ_max must not exceed √(N_pixels/12) to avoid aliasing in the spherical harmonic transform"
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S036_cmb_power_spectrum/"
   ],
-  "key_concepts": []
+  "epigenetic_marks": [
+    "domain:cosmology"
+  ],
+  "asset_id": "sha256:f3425ee28d0d7e870314357a21d716d3b02f3f6de0683a88c159b8528c33745f"
 }

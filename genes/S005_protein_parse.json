@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S005_protein_parse",
-  "domain": "bioinformatics",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S005_protein_parse",
+  "category": "optimize",
+  "signals_match": [
     "argparse",
     "csv",
     "csv encoding issues",
@@ -12,19 +14,28 @@
     "pandas"
   ],
   "summary": "This skill helps parse SwissProt protein database entries from JSON format and extract structured biological information into CSV format with comprehensive error handling for missing fields.",
-  "strategy": [
-    "Load and validate the JSON file structure containing protein entries",
-    "Iterate through each protein entry and extract: accession, protein_name, gene_name, organism, sequence_length, number_of_features, and GO_terms",
-    "Handle missing or malformed fields by applying default values (empty strings for text, 0 for counts)"
-  ],
-  "pitfalls": [
-    "Nested field access errors: SwissProt JSON has deeply nested structures (protein.recommendedName.fullName).",
-    "Multiple gene names: Gene field can contain multiple names or be missing.",
-    "GO term extraction complexity: dbReferences contains mixed reference types."
-  ],
-  "key_concepts": [
+  "preconditions": [
     "Wrap JSON loading in try-except to catch malformed files and provide clear error messages",
     "Use safe dictionary navigation with nested",
     "Validate that required output directory exists before writing CSV file"
-  ]
+  ],
+  "strategy": [
+    "Load and validate the JSON file structure containing protein entries",
+    "Iterate through each protein entry and extract: accession, protein_name, gene_name, organism, sequence_length, number_of_features, and GO_terms",
+    "Handle missing or malformed fields by applying default values (empty strings for text, 0 for counts)",
+    "AVOID: Nested field access errors: SwissProt JSON has deeply nested structures (protein.recommendedName.fullName).",
+    "AVOID: Multiple gene names: Gene field can contain multiple names or be missing.",
+    "AVOID: GO term extraction complexity: dbReferences contains mixed reference types."
+  ],
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S005_protein_parse/"
+  ],
+  "epigenetic_marks": [
+    "domain:bioinformatics"
+  ],
+  "asset_id": "sha256:0aa9e884266acd8d0696ab9efca85cfa50698b32cdd98c336dec4ee812885e8c"
 }

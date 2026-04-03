@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S017_ctd_ocean",
-  "domain": "oceanography",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S017_ctd_ocean",
+  "category": "optimize",
+  "signals_match": [
     "csv",
     "gradient calculation edge effects",
     "interpolate",
@@ -12,19 +14,28 @@
     "oceanographic"
   ],
   "summary": "This skill processes CTD (Conductivity-Temperature-Depth) oceanographic profile data by interpolating measurements to regular depth grids, computing derived oceanographic parameters like potential density and thermocline characteristics, and generating standardized outputs for marine science analysis.",
-  "strategy": [
-    "Load and validate CTD data ensuring required columns (station_id, depth_m, temperature_C, salinity_PSU, dissolved_oxygen_mL_L) are present",
-    "Group data by station_id and interpolate each profile to a regular depth grid from 0 to maximum depth at specified resolution",
-    "Calculate potential density (sigma-t) using the simplified UNESCO equation for each interpolated profile"
-  ],
-  "pitfalls": [
-    "Monotonic depth requirement: CTD data may have non-monotonic depths due to instrument drift.",
-    "Sparse data interpolation: Interpolating over large depth gaps can create unrealistic values.",
-    "Surface temperature reference: Mixed layer depth calculation requires valid surface temperature."
-  ],
-  "key_concepts": [
+  "preconditions": [
     "Validate input CSV structure and required columns before processing",
     "Handle stations with insufficient data points (< 3 measurements) by skipping with warning",
     "Catch interpolation failures for individual stations and continue processing remaining data"
-  ]
+  ],
+  "strategy": [
+    "Load and validate CTD data ensuring required columns (station_id, depth_m, temperature_C, salinity_PSU, dissolved_oxygen_mL_L) are present",
+    "Group data by station_id and interpolate each profile to a regular depth grid from 0 to maximum depth at specified resolution",
+    "Calculate potential density (sigma-t) using the simplified UNESCO equation for each interpolated profile",
+    "AVOID: Monotonic depth requirement: CTD data may have non-monotonic depths due to instrument drift.",
+    "AVOID: Sparse data interpolation: Interpolating over large depth gaps can create unrealistic values.",
+    "AVOID: Surface temperature reference: Mixed layer depth calculation requires valid surface temperature."
+  ],
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S017_ctd_ocean/"
+  ],
+  "epigenetic_marks": [
+    "domain:oceanography"
+  ],
+  "asset_id": "sha256:c3f0e012f61ad23127ff116b758e918bf19d70366b832d65dfcf625bcb16da4f"
 }

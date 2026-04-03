@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S048_gene_ontology",
-  "domain": "genomics",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S048_gene_ontology",
+  "category": "optimize",
+  "signals_match": [
     "empty intersections",
     "enrichment",
     "fisher's exact test parameters",
@@ -12,19 +14,28 @@
     "multiple testing explosion"
   ],
   "summary": "This skill enables creation of a command-line tool for performing Gene Ontology (GO) enrichment analysis on gene lists.",
-  "strategy": [
-    "**Create synthetic GO annotation database** mapping genes to GO terms with descriptive names",
-    "**Map input genes to GO terms** and count occurrences for each term in both input and background sets",
-    "**Calculate enrichment statistics** including observed/expected ratios and Fisher's exact test p-values"
-  ],
-  "pitfalls": [
-    "Empty intersections: Input genes may not overlap with background set, leading to no results.",
-    "Fisher's exact test parameters: Incorrect contingency table construction can give wrong p-values.",
-    "Multiple testing explosion: Too many GO terms can make Bonferroni correction overly conservative."
-  ],
-  "key_concepts": [
+  "preconditions": [
     "Validate that input and background gene lists are non-empty and contain valid identifiers",
     "Check for sufficient overlap between input genes and GO annotation database",
     "Handle cases where no GO terms meet significance thresholds by providing informative output"
-  ]
+  ],
+  "strategy": [
+    "**Create synthetic GO annotation database** mapping genes to GO terms with descriptive names",
+    "**Map input genes to GO terms** and count occurrences for each term in both input and background sets",
+    "**Calculate enrichment statistics** including observed/expected ratios and Fisher's exact test p-values",
+    "AVOID: Empty intersections: Input genes may not overlap with background set, leading to no results.",
+    "AVOID: Fisher's exact test parameters: Incorrect contingency table construction can give wrong p-values.",
+    "AVOID: Multiple testing explosion: Too many GO terms can make Bonferroni correction overly conservative."
+  ],
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S048_gene_ontology/"
+  ],
+  "epigenetic_marks": [
+    "domain:genomics"
+  ],
+  "asset_id": "sha256:eac05c58bb961cc70bd9344a56b357da6947f9b55fd3005464b607ab54551657"
 }

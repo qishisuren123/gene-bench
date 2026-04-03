@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S107_regime_switch",
-  "domain": "finance",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S107_regime_switch",
+  "category": "optimize",
+  "signals_match": [
     "regime",
     "structural break",
     "volatility",
@@ -11,17 +13,26 @@
     "Sharpe ratio"
   ],
   "summary": "Detect volatility regime switches in financial time series using rolling statistics and classify into low-vol, high-vol, and crisis regimes.",
+  "preconditions": [
+    "Annualized Sharpe ratio = (mean_daily_return * 252) / (daily_vol * sqrt(252))",
+    "Transition matrix: P(regime_j | current_regime_i) estimated from observed transitions"
+  ],
   "strategy": [
     "Compute log returns from price series, then calculate rolling mean and volatility with specified window size",
     "Detect change points where rolling volatility changes by >2x between adjacent non-overlapping windows",
-    "Classify each regime by comparing its volatility to the median: low_vol, high_vol, or crisis (>2x median)"
+    "Classify each regime by comparing its volatility to the median: low_vol, high_vol, or crisis (>2x median)",
+    "AVOID: Log returns: use log(P_t/P_{t-1}), not simple returns, for better statistical properties",
+    "AVOID: Rolling window at series boundaries produces NaN — handle by starting regime detection after full window is available"
   ],
-  "pitfalls": [
-    "Log returns: use log(P_t/P_{t-1}), not simple returns, for better statistical properties",
-    "Rolling window at series boundaries produces NaN — handle by starting regime detection after full window is available"
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S107_regime_switch/"
   ],
-  "key_concepts": [
-    "Annualized Sharpe ratio = (mean_daily_return * 252) / (daily_vol * sqrt(252))",
-    "Transition matrix: P(regime_j | current_regime_i) estimated from observed transitions"
-  ]
+  "epigenetic_marks": [
+    "domain:finance"
+  ],
+  "asset_id": "sha256:8907a8978225da9cb0cf45fe3094136ff428207e475c0702e1c666c65f338435"
 }

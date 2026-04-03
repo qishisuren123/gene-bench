@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S026_earthquake_catalog",
-  "domain": "geophysics",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S026_earthquake_catalog",
+  "category": "optimize",
+  "signals_match": [
     "aftershock",
     "aftershock temporal ordering",
     "b-value calculation edge cases",
@@ -12,19 +14,28 @@
     "haversine distance precision"
   ],
   "summary": "This skill helps analyze earthquake catalogs to identify aftershock sequences, compute seismological statistics like the Gutenberg-Richter b-value, and generate comprehensive reports on earthquake clustering patterns.",
-  "strategy": [
-    "Load and validate earthquake catalog data with required columns (event_id, datetime, lat, lon, depth, magnitude)",
-    "Estimate magnitude of completeness from frequency-magnitude distribution maximum and compute Gutenberg-Richter b-value using Aki's maximum likelihood formula",
-    "Identify potential mainshocks (magnitude >= 4.0) and search for aftershocks within spatial-temporal clustering criteria using Haversine distance"
-  ],
-  "pitfalls": [
-    "Datetime parsing errors: Earthquake catalogs use various datetime formats.",
-    "Haversine distance precision: Earth's radius varies; use 6371.0 km as standard.",
-    "Magnitude completeness estimation: The histogram maximum method can be noisy for small catalogs."
-  ],
-  "key_concepts": [
+  "preconditions": [
     "Validate CSV columns exist and contain expected data types before processing",
     "Handle empty or insufficient data gracefully with informative error messages",
     "Use try-except blocks around mathematical operations (log10, division) that could fail with edge case data"
-  ]
+  ],
+  "strategy": [
+    "Load and validate earthquake catalog data with required columns (event_id, datetime, lat, lon, depth, magnitude)",
+    "Estimate magnitude of completeness from frequency-magnitude distribution maximum and compute Gutenberg-Richter b-value using Aki's maximum likelihood formula",
+    "Identify potential mainshocks (magnitude >= 4.0) and search for aftershocks within spatial-temporal clustering criteria using Haversine distance",
+    "AVOID: Datetime parsing errors: Earthquake catalogs use various datetime formats.",
+    "AVOID: Haversine distance precision: Earth's radius varies; use 6371.0 km as standard.",
+    "AVOID: Magnitude completeness estimation: The histogram maximum method can be noisy for small catalogs."
+  ],
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S026_earthquake_catalog/"
+  ],
+  "epigenetic_marks": [
+    "domain:geophysics"
+  ],
+  "asset_id": "sha256:631f0715dfae9af364e6dd78ad74bb9da2e1ad347b07596d671279b83fcbf281"
 }

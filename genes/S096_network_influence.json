@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S096_network_influence",
-  "domain": "network",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S096_network_influence",
+  "category": "optimize",
+  "signals_match": [
     "csv",
     "influence",
     "json",
@@ -12,19 +14,28 @@
     "social"
   ],
   "summary": "This skill helps analyze social network interaction data to identify influential users by computing weighted influence scores, network centrality measures, and combined influence metrics.",
-  "strategy": [
-    "**Parse and validate interaction data** - Load CSV/JSON data containing user_id, target_user, interaction_type, and timestamp fields",
-    "**Calculate weighted influence scores** - Apply interaction weights (share=3, comment=2, like=1) to compute each user's outgoing influence",
-    "**Compute degree centrality** - Calculate normalized centrality based on total unique connections (incoming + outgoing)"
-  ],
-  "pitfalls": [
-    "Self-interactions contamination: Including users interacting with themselves inflates centrality scores.",
-    "Timestamp parsing inconsistencies: Mixed date formats cause analysis errors.",
-    "Zero-division in normalization: Networks with single users cause division by zero."
-  ],
-  "key_concepts": [
+  "preconditions": [
     "Validate required columns exist in input data before processing",
     "Handle missing timestamps by using median timestamp or current date",
     "Skip malformed records and log warnings rather than crashing"
-  ]
+  ],
+  "strategy": [
+    "**Parse and validate interaction data** - Load CSV/JSON data containing user_id, target_user, interaction_type, and timestamp fields",
+    "**Calculate weighted influence scores** - Apply interaction weights (share=3, comment=2, like=1) to compute each user's outgoing influence",
+    "**Compute degree centrality** - Calculate normalized centrality based on total unique connections (incoming + outgoing)",
+    "AVOID: Self-interactions contamination: Including users interacting with themselves inflates centrality scores.",
+    "AVOID: Timestamp parsing inconsistencies: Mixed date formats cause analysis errors.",
+    "AVOID: Zero-division in normalization: Networks with single users cause division by zero."
+  ],
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S096_network_influence/"
+  ],
+  "epigenetic_marks": [
+    "domain:network"
+  ],
+  "asset_id": "sha256:bee8e47d446f8118fe19eaa4d629b5719eebad1a516b9a29907a5eb70f16aa51"
 }

@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S069_rainfall_extreme",
-  "domain": "meteorology",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S069_rainfall_extreme",
+  "category": "optimize",
+  "signals_match": [
     "date indexing misalignment",
     "incomplete year handling",
     "interpolation",
@@ -12,19 +14,28 @@
     "rainfall"
   ],
   "summary": "This skill enables hydrological analysis of daily precipitation data to compute return periods using the annual maximum series method, identify extreme precipitation events, and generate statistical summaries for flood risk assessment and water resource management.",
-  "strategy": [
-    "**Parse and validate input data**: Convert comma-separated precipitation values to numpy array, handle missing data (negative values), and create date index from start year",
-    "**Extract annual maxima**: Group daily data by complete calendar years, compute maximum precipitation for each year, excluding incomplete years at dataset boundaries",
-    "**Calculate return periods**: Sort annual maxima in descending order, assign ranks, and apply Weibull plotting position formula T = (n+1)/r"
-  ],
-  "pitfalls": [
-    "Incomplete year handling: Including partial years at dataset boundaries skews return period calculations.",
-    "Rank assignment errors: Weibull formula requires ranks starting from 1 for the highest value.",
-    "Missing data propagation: Negative values representing missing data can become false maxima if not filtered before annual maximum extraction."
-  ],
-  "key_concepts": [
+  "preconditions": [
     "Validate input data length matches expected time series duration",
     "Check for sufficient complete years (minimum 10) for meaningful return period analysis",
     "Handle edge cases where no events exceed the 10-year threshold"
-  ]
+  ],
+  "strategy": [
+    "**Parse and validate input data**: Convert comma-separated precipitation values to numpy array, handle missing data (negative values), and create date index from start year",
+    "**Extract annual maxima**: Group daily data by complete calendar years, compute maximum precipitation for each year, excluding incomplete years at dataset boundaries",
+    "**Calculate return periods**: Sort annual maxima in descending order, assign ranks, and apply Weibull plotting position formula T = (n+1)/r",
+    "AVOID: Incomplete year handling: Including partial years at dataset boundaries skews return period calculations.",
+    "AVOID: Rank assignment errors: Weibull formula requires ranks starting from 1 for the highest value.",
+    "AVOID: Missing data propagation: Negative values representing missing data can become false maxima if not filtered before annual maximum extraction."
+  ],
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S069_rainfall_extreme/"
+  ],
+  "epigenetic_marks": [
+    "domain:meteorology"
+  ],
+  "asset_id": "sha256:7ae6e73bde955679be77f0bb225204be6dacd28312b4af36dc6b995414f9659f"
 }

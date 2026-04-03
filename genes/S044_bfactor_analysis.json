@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S044_bfactor_analysis",
-  "domain": "structural_biology",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S044_bfactor_analysis",
+  "category": "optimize",
+  "signals_match": [
     "consecutive grouping logic",
     "empty flexible regions",
     "factor",
@@ -12,19 +14,28 @@
     "tool"
   ],
   "summary": "This skill helps create a command-line tool for analyzing B-factor (temperature factor) distributions in protein structures to identify flexible regions and assess structural reliability.",
-  "strategy": [
-    "**Convert and validate B-factor data** from comma-separated string to numpy array with error checking",
-    "**Calculate comprehensive statistics** including mean, median, standard deviation, and quartiles using numpy/scipy",
-    "**Identify flexible regions** by finding residues above 75th percentile and group consecutive positions into segments"
-  ],
-  "pitfalls": [
-    "Invalid B-factor values: Non-numeric or negative values in input data - validate and convert data types early with proper error messages",
-    "Empty flexible regions: When no residues exceed 75th percentile threshold - handle edge case by reporting \"No flexible regions identified\"",
-    "Single-residue datasets: Statistics become meaningless with insufficient data - require minimum dataset size (e.g., 5 residues)"
-  ],
-  "key_concepts": [
+  "preconditions": [
     "Validate input data format and convert to float array with descriptive error messages for parsing failures",
     "Check for minimum dataset size requirements before statistical analysis",
     "Handle file I/O exceptions when saving JSON results and PNG plots"
-  ]
+  ],
+  "strategy": [
+    "**Convert and validate B-factor data** from comma-separated string to numpy array with error checking",
+    "**Calculate comprehensive statistics** including mean, median, standard deviation, and quartiles using numpy/scipy",
+    "**Identify flexible regions** by finding residues above 75th percentile and group consecutive positions into segments",
+    "AVOID: Invalid B-factor values: Non-numeric or negative values in input data - validate and convert data types early with proper error messages",
+    "AVOID: Empty flexible regions: When no residues exceed 75th percentile threshold - handle edge case by reporting \"No flexible regions identified\"",
+    "AVOID: Single-residue datasets: Statistics become meaningless with insufficient data - require minimum dataset size (e.g., 5 residues)"
+  ],
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S044_bfactor_analysis/"
+  ],
+  "epigenetic_marks": [
+    "domain:structural_biology"
+  ],
+  "asset_id": "sha256:2357745bee35fe8d9535ee89c953a5d7c4c12772c1a79d193b77e9cda9082621"
 }

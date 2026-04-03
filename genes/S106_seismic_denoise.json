@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S106_seismic_denoise",
-  "domain": "seismology",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S106_seismic_denoise",
+  "category": "optimize",
+  "signals_match": [
     "bandpass filter",
     "Butterworth",
     "STA/LTA",
@@ -11,17 +13,26 @@
     "trigger detection"
   ],
   "summary": "Denoise seismic waveforms using Butterworth bandpass filtering and detect P-wave arrivals using STA/LTA ratio triggering.",
+  "preconditions": [
+    "Butterworth filter provides maximally flat frequency response in the passband",
+    "STA/LTA is the standard seismic trigger: STA captures signal onset, LTA captures background noise level"
+  ],
   "strategy": [
     "Design 4th-order Butterworth bandpass filter between lowcut and highcut frequencies, apply to each velocity component",
     "Compute STA/LTA ratio: short-term average amplitude / long-term average amplitude in sliding windows",
-    "Trigger P-wave detection where STA/LTA exceeds 3.0, compute SNR improvement as ratio of signal power before/after filtering"
+    "Trigger P-wave detection where STA/LTA exceeds 3.0, compute SNR improvement as ratio of signal power before/after filtering",
+    "AVOID: Sampling rate must be correctly determined from time column spacing for proper filter frequency normalization",
+    "AVOID: STA and LTA windows must not overlap with signal onset for accurate trigger timing"
   ],
-  "pitfalls": [
-    "Sampling rate must be correctly determined from time column spacing for proper filter frequency normalization",
-    "STA and LTA windows must not overlap with signal onset for accurate trigger timing"
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S106_seismic_denoise/"
   ],
-  "key_concepts": [
-    "Butterworth filter provides maximally flat frequency response in the passband",
-    "STA/LTA is the standard seismic trigger: STA captures signal onset, LTA captures background noise level"
-  ]
+  "epigenetic_marks": [
+    "domain:seismology"
+  ],
+  "asset_id": "sha256:7884d982e2568f48c913d51c511f6985080b20aea260b367745f1ff40bd0765c"
 }

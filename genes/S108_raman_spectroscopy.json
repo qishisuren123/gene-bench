@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S108_raman_spectroscopy",
-  "domain": "spectroscopy",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S108_raman_spectroscopy",
+  "category": "optimize",
+  "signals_match": [
     "Raman",
     "baseline correction",
     "peak detection",
@@ -11,17 +13,26 @@
     "functional group"
   ],
   "summary": "Analyze Raman spectra by subtracting fluorescence baseline, detecting peaks, and matching to known vibrational bands for compound identification.",
+  "preconditions": [
+    "Key Raman bands: C-H stretch ~2900, C=O ~1700, C-C ~1000, O-H ~3400 cm⁻¹",
+    "FWHM from scipy peak_widths is in data points — convert to wavenumber units using spectral resolution"
+  ],
   "strategy": [
     "Subtract baseline using polynomial fitting (degree 5) or ALS iterative method to remove fluorescence background",
     "Detect peaks in baseline-corrected spectrum using scipy.signal.find_peaks with prominence threshold",
-    "For each peak, compute FWHM and area via Gaussian fitting, then match position to known Raman band database"
+    "For each peak, compute FWHM and area via Gaussian fitting, then match position to known Raman band database",
+    "AVOID: Polynomial baseline can overfit if degree is too high — use degree 5 and visually inspect",
+    "AVOID: Peak assignment tolerance: Raman bands can shift ±20 cm⁻¹ from literature values depending on sample conditions"
   ],
-  "pitfalls": [
-    "Polynomial baseline can overfit if degree is too high — use degree 5 and visually inspect",
-    "Peak assignment tolerance: Raman bands can shift ±20 cm⁻¹ from literature values depending on sample conditions"
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S108_raman_spectroscopy/"
   ],
-  "key_concepts": [
-    "Key Raman bands: C-H stretch ~2900, C=O ~1700, C-C ~1000, O-H ~3400 cm⁻¹",
-    "FWHM from scipy peak_widths is in data points — convert to wavenumber units using spectral resolution"
-  ]
+  "epigenetic_marks": [
+    "domain:spectroscopy"
+  ],
+  "asset_id": "sha256:ca170a4912870ff9f3142c00a15b7c5e2dd89d947ddadc35f47e06f4fb700851"
 }

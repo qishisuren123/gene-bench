@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S104_multisensor_anomaly",
-  "domain": "anomaly_detection",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S104_multisensor_anomaly",
+  "category": "optimize",
+  "signals_match": [
     "z-score",
     "rolling window",
     "Mahalanobis",
@@ -11,17 +13,26 @@
     "ensemble"
   ],
   "summary": "Detect anomalies in multi-sensor time series using ensemble of rolling z-score, cross-sensor correlation, and Mahalanobis distance methods.",
+  "preconditions": [
+    "Classify anomaly types: point (single spike), collective (sustained), contextual (cross-sensor disagreement)",
+    "Ensemble approach reduces false positives by requiring agreement across detection methods"
+  ],
   "strategy": [
     "Compute per-sensor rolling z-scores and flag individual sensor anomalies exceeding the threshold",
     "Cross-validate: timestamps where >50% sensors are anomalous simultaneously indicate system-level events",
-    "Use Mahalanobis distance across all sensors for multivariate anomaly detection that accounts for sensor correlations"
+    "Use Mahalanobis distance across all sensors for multivariate anomaly detection that accounts for sensor correlations",
+    "AVOID: Rolling window must be large enough to estimate stable statistics but small enough to detect regime changes",
+    "AVOID: Mahalanobis distance requires invertible covariance matrix — handle near-singular cases with regularization"
   ],
-  "pitfalls": [
-    "Rolling window must be large enough to estimate stable statistics but small enough to detect regime changes",
-    "Mahalanobis distance requires invertible covariance matrix — handle near-singular cases with regularization"
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S104_multisensor_anomaly/"
   ],
-  "key_concepts": [
-    "Classify anomaly types: point (single spike), collective (sustained), contextual (cross-sensor disagreement)",
-    "Ensemble approach reduces false positives by requiring agreement across detection methods"
-  ]
+  "epigenetic_marks": [
+    "domain:anomaly_detection"
+  ],
+  "asset_id": "sha256:4686b456a8a26e726e74050cc8cbd8abec474eea5c0bb0de2c78326989daccc3"
 }

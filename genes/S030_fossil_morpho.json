@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S030_fossil_morpho",
-  "domain": "paleontology",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S030_fossil_morpho",
+  "category": "optimize",
+  "signals_match": [
     "argparse",
     "csv",
     "fossil",
@@ -12,19 +14,28 @@
     "pca"
   ],
   "summary": "This skill enables comprehensive morphometric analysis of fossil specimen measurements, including shape index calculations, principal component analysis with eigen-decomposition, and taxonomic/temporal grouping statistics for paleontological research.",
-  "strategy": [
-    "Load and validate fossil specimen data with required columns (specimen_id, taxon, length_mm, width_mm, height_mm, mass_g, formation, epoch)",
-    "Calculate morphometric shape indices: elongation, flatness, Krumbein sphericity, ellipsoidal volume, and density",
-    "Perform PCA on standardized measurements using numpy eigen-decomposition of covariance matrix"
-  ],
-  "pitfalls": [
-    "Missing measurement validation: Always check for negative values or zeros in dimensions before calculating shape indices, as these indicate measurement errors",
-    "Volume unit conversion errors: Remember to convert mm³ to cm³ (divide by 1000) before calculating density to get g/cm³",
-    "PCA standardization order: Apply z-score standardization before computing covariance matrix, not after eigen-decomposition"
-  ],
-  "key_concepts": [
+  "preconditions": [
     "Validate CSV structure and required columns before processing",
     "Handle division by zero in shape calculations by setting invalid results to NaN",
     "Check for successful eigen-decomposition convergence and handle degenerate covariance matrices"
-  ]
+  ],
+  "strategy": [
+    "Load and validate fossil specimen data with required columns (specimen_id, taxon, length_mm, width_mm, height_mm, mass_g, formation, epoch)",
+    "Calculate morphometric shape indices: elongation, flatness, Krumbein sphericity, ellipsoidal volume, and density",
+    "Perform PCA on standardized measurements using numpy eigen-decomposition of covariance matrix",
+    "AVOID: Missing measurement validation: Always check for negative values or zeros in dimensions before calculating shape indices, as these indicate measurement errors",
+    "AVOID: Volume unit conversion errors: Remember to convert mm³ to cm³ (divide by 1000) before calculating density to get g/cm³",
+    "AVOID: PCA standardization order: Apply z-score standardization before computing covariance matrix, not after eigen-decomposition"
+  ],
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S030_fossil_morpho/"
+  ],
+  "epigenetic_marks": [
+    "domain:paleontology"
+  ],
+  "asset_id": "sha256:be51231e1f827d807ac82fda3b40c2b8d2c2133eb948e38a71b320d052ede3c0"
 }

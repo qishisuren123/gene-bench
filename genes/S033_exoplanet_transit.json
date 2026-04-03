@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S033_exoplanet_transit",
-  "domain": "astronomy",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S033_exoplanet_transit",
+  "category": "optimize",
+  "signals_match": [
     "box-car filter edge effects",
     "detection",
     "exoplanet",
@@ -12,19 +14,28 @@
     "poor initial parameter estimates"
   ],
   "summary": "This skill enables detection and parameter fitting of exoplanet transit signals in photometric time series data using box-car filtering and least-squares optimization.",
-  "strategy": [
-    "**Generate baseline photometric time series** with specified sampling, noise characteristics, and 10-day observation window",
-    "**Inject realistic box-car transit signal** at day 5.0 with specified depth and 3-hour duration using proper transit geometry",
-    "**Apply sliding box-car detection filter** across time series to identify transit candidates and calculate detection significance"
-  ],
-  "pitfalls": [
-    "Inadequate time sampling around transit: Ensure sufficient data points during 3-hour transit window by using proper time grid spacing, especially for sparse sampling",
-    "Box-car filter edge effects: Pad time series or restrict search window to avoid spurious detections at data boundaries where filter response is unreliable",
-    "Poor initial parameter estimates: Use detection results to seed fitting algorithm with reasonable starting values to avoid local minima in parameter space"
-  ],
-  "key_concepts": [
+  "preconditions": [
     "Validate that transit duration (3 hours) is properly sampled given the number of data points and 10-day baseline",
     "Check for convergence failures in least-squares fitting and provide fallback parameter estimates",
     "Handle cases where no significant transit is detected (significance < 3σ) by reporting null results"
-  ]
+  ],
+  "strategy": [
+    "**Generate baseline photometric time series** with specified sampling, noise characteristics, and 10-day observation window",
+    "**Inject realistic box-car transit signal** at day 5.0 with specified depth and 3-hour duration using proper transit geometry",
+    "**Apply sliding box-car detection filter** across time series to identify transit candidates and calculate detection significance",
+    "AVOID: Inadequate time sampling around transit: Ensure sufficient data points during 3-hour transit window by using proper time grid spacing, especially for sparse sampling",
+    "AVOID: Box-car filter edge effects: Pad time series or restrict search window to avoid spurious detections at data boundaries where filter response is unreliable",
+    "AVOID: Poor initial parameter estimates: Use detection results to seed fitting algorithm with reasonable starting values to avoid local minima in parameter space"
+  ],
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S033_exoplanet_transit/"
+  ],
+  "epigenetic_marks": [
+    "domain:astronomy"
+  ],
+  "asset_id": "sha256:cace20b3c4d103d841a3a8607eac278aa06caf09cebbdacd3f9e678cb2cd621c"
 }

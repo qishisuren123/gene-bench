@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S067_salinity_gradient",
-  "domain": "oceanography",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S067_salinity_gradient",
+  "category": "optimize",
+  "signals_match": [
     "estuarine",
     "gradient",
     "halocline detection in noisy data",
@@ -12,19 +14,28 @@
     "salinity"
   ],
   "summary": "This skill enables analysis of estuarine salinity gradients using CTD transect data to identify mixing zones, calculate stratification indices, detect haloclines, and map salt wedge intrusion patterns in coastal environments.",
-  "strategy": [
-    "**Load and validate CTD transect data** - Parse JSON input containing station positions, depths, temperature, salinity, and conductivity measurements",
-    "**Apply quality control filters** - Flag suspicious salinity jumps >2 PSU and density inversions >0.1 kg/m³ between adjacent measurements",
-    "**Detect haloclines** - Identify depth ranges where salinity gradient exceeds 0.5 PSU/m over minimum 2m intervals"
-  ],
-  "pitfalls": [
-    "Incorrect density calculation: Use UNESCO equation of state for seawater density, not linear approximation - temperature and pressure effects are critical in estuaries",
-    "Halocline detection in noisy data: Apply 3-point running mean before gradient calculation to avoid false positives from instrument noise",
-    "Salt wedge tracking errors: Interpolate between measurement depths to find exact 2 PSU crossing, don't just use nearest measurement"
-  ],
-  "key_concepts": [
+  "preconditions": [
     "Validate input data ranges (salinity 0-40 PSU, temperature -2 to 35°C, reasonable lat/lon bounds)",
     "Handle missing data points using linear interpolation only within 5m depth gaps",
     "Check for monotonic depth increases and flag reversed profiles"
-  ]
+  ],
+  "strategy": [
+    "**Load and validate CTD transect data** - Parse JSON input containing station positions, depths, temperature, salinity, and conductivity measurements",
+    "**Apply quality control filters** - Flag suspicious salinity jumps >2 PSU and density inversions >0.1 kg/m³ between adjacent measurements",
+    "**Detect haloclines** - Identify depth ranges where salinity gradient exceeds 0.5 PSU/m over minimum 2m intervals",
+    "AVOID: Incorrect density calculation: Use UNESCO equation of state for seawater density, not linear approximation - temperature and pressure effects are critical in estuaries",
+    "AVOID: Halocline detection in noisy data: Apply 3-point running mean before gradient calculation to avoid false positives from instrument noise",
+    "AVOID: Salt wedge tracking errors: Interpolate between measurement depths to find exact 2 PSU crossing, don't just use nearest measurement"
+  ],
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S067_salinity_gradient/"
+  ],
+  "epigenetic_marks": [
+    "domain:oceanography"
+  ],
+  "asset_id": "sha256:2710f6b7087749e4ac6d175cb8f77b3b926d447a1ae8c531424debc62bc76fde"
 }

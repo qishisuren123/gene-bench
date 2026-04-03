@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S011_particle_physics",
-  "domain": "physics",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S011_particle_physics",
+  "category": "optimize",
+  "signals_match": [
     "csv",
     "cut flow ordering",
     "energy",
@@ -12,19 +14,28 @@
     "mass window parsing errors"
   ],
   "summary": "This skill enables analysis of particle collision event data from high-energy physics experiments, applying quality cuts, event classification, and statistical analysis to identify signal events and compute significance metrics.",
-  "strategy": [
-    "Load collision event data and validate required columns are present",
-    "Apply sequential quality cuts (track count, energy threshold, jet pseudorapidity) with cut flow tracking",
-    "Classify events as \"signal\" or \"background\" based on invariant mass window and lepton multiplicity"
-  ],
-  "pitfalls": [
-    "Missing pseudorapidity bounds: Always apply |eta| < 2.5 cut for detector acceptance, not just eta < 2.5",
-    "Mass window parsing errors: Handle both comma-separated strings and numeric ranges, validate min < max",
-    "Zero background division: Check for B=0 before computing S/√(S+B) to avoid mathematical errors"
-  ],
-  "key_concepts": [
+  "preconditions": [
     "Validate CSV contains all required physics columns before processing",
     "Handle empty datasets after cuts with graceful warnings",
     "Check for non-numeric values in physics quantities and skip malformed events"
-  ]
+  ],
+  "strategy": [
+    "Load collision event data and validate required columns are present",
+    "Apply sequential quality cuts (track count, energy threshold, jet pseudorapidity) with cut flow tracking",
+    "Classify events as \"signal\" or \"background\" based on invariant mass window and lepton multiplicity",
+    "AVOID: Missing pseudorapidity bounds: Always apply |eta| < 2.5 cut for detector acceptance, not just eta < 2.5",
+    "AVOID: Mass window parsing errors: Handle both comma-separated strings and numeric ranges, validate min < max",
+    "AVOID: Zero background division: Check for B=0 before computing S/√(S+B) to avoid mathematical errors"
+  ],
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S011_particle_physics/"
+  ],
+  "epigenetic_marks": [
+    "domain:physics"
+  ],
+  "asset_id": "sha256:4b71167d4567a440129f6b842fb3aaa85485a13ba76c8e10cedae0084894a471"
 }

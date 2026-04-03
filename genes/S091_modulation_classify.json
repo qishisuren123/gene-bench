@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S091_modulation_classify",
-  "domain": "signal_processing",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S091_modulation_classify",
+  "category": "optimize",
+  "signals_match": [
     "classification",
     "digital",
     "frequency offset corruption",
@@ -12,19 +14,28 @@
     "phase ambiguity in psk signals"
   ],
   "summary": "This skill enables classification of digital modulation schemes (BPSK, QPSK, 8PSK, 16QAM, 64QAM) from complex-valued IQ sample data using signal processing feature extraction and machine learning classification techniques.",
-  "strategy": [
-    "**Load and preprocess IQ data**: Read HDF5 files containing complex IQ samples, apply DC removal, normalization, and automatic gain control",
-    "**Extract signal features**: Compute instantaneous amplitude/phase statistics, constellation metrics, spectral features, higher-order moments, and zero-crossing rates",
-    "**Generate constellation diagrams**: Create scatter plots of normalized IQ samples and save visualization for each signal"
-  ],
-  "pitfalls": [
-    "Phase ambiguity in PSK signals: PSK constellations can appear rotated due to carrier phase offset.",
-    "Power normalization inconsistency: Different signals may have vastly different power levels.",
-    "Frequency offset corruption: Carrier frequency offset causes constellation rotation over time."
-  ],
-  "key_concepts": [
+  "preconditions": [
     "Validate HDF5 file structure and complex data types before processing",
     "Handle missing or corrupted signal datasets gracefully with warning messages",
     "Implement bounds checking for feature extraction to avoid division by zero or infinite values"
-  ]
+  ],
+  "strategy": [
+    "**Load and preprocess IQ data**: Read HDF5 files containing complex IQ samples, apply DC removal, normalization, and automatic gain control",
+    "**Extract signal features**: Compute instantaneous amplitude/phase statistics, constellation metrics, spectral features, higher-order moments, and zero-crossing rates",
+    "**Generate constellation diagrams**: Create scatter plots of normalized IQ samples and save visualization for each signal",
+    "AVOID: Phase ambiguity in PSK signals: PSK constellations can appear rotated due to carrier phase offset.",
+    "AVOID: Power normalization inconsistency: Different signals may have vastly different power levels.",
+    "AVOID: Frequency offset corruption: Carrier frequency offset causes constellation rotation over time."
+  ],
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S091_modulation_classify/"
+  ],
+  "epigenetic_marks": [
+    "domain:signal_processing"
+  ],
+  "asset_id": "sha256:c193ce47995850d0a230c42c3a8c67f37acb57c96623f4eb6ab33a4fe1bb2e25"
 }

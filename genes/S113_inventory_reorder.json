@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S113_inventory_reorder",
-  "domain": "supply_chain",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S113_inventory_reorder",
+  "category": "optimize",
+  "signals_match": [
     "EOQ",
     "reorder point",
     "safety stock",
@@ -11,17 +13,26 @@
     "holding cost"
   ],
   "summary": "Compute optimal inventory reorder points and Economic Order Quantities (EOQ) from historical demand data with safety stock for target service level.",
+  "preconditions": [
+    "Safety stock = z-score * std_demand_during_lead_time provides buffer against stockouts",
+    "Total annual cost = (D/Q)*K + (Q/2)*h + stockout_cost for optimization"
+  ],
   "strategy": [
     "Compute demand statistics per product: mean, std, and coefficient of variation to choose demand distribution",
     "Calculate EOQ using the Wilson formula: Q* = sqrt(2*D*K/h) where D=annual demand, K=ordering cost, h=holding cost",
-    "Determine reorder point: ROP = mean_demand_during_lead_time + z*std_demand_during_lead_time where z=norm.ppf(service_level)"
+    "Determine reorder point: ROP = mean_demand_during_lead_time + z*std_demand_during_lead_time where z=norm.ppf(service_level)",
+    "AVOID: Demand during lead time variance combines both demand and lead time variability: Var = LT*Var(D) + D²*Var(LT)",
+    "AVOID: EOQ assumes constant demand rate — for highly variable demand, adjust with demand coefficient of variation"
   ],
-  "pitfalls": [
-    "Demand during lead time variance combines both demand and lead time variability: Var = LT*Var(D) + D²*Var(LT)",
-    "EOQ assumes constant demand rate — for highly variable demand, adjust with demand coefficient of variation"
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S113_inventory_reorder/"
   ],
-  "key_concepts": [
-    "Safety stock = z-score * std_demand_during_lead_time provides buffer against stockouts",
-    "Total annual cost = (D/Q)*K + (Q/2)*h + stockout_cost for optimization"
-  ]
+  "epigenetic_marks": [
+    "domain:supply_chain"
+  ],
+  "asset_id": "sha256:38bbf4e0c4e3792c63dcd97b966f6c3b80c6996d527ab42fee0fbb211aba5415"
 }

@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S007_data_viz",
-  "domain": "visualization",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S007_data_viz",
+  "category": "optimize",
+  "signals_match": [
     "activity",
     "csv",
     "empty output directory",
@@ -12,19 +14,28 @@
     "neural"
   ],
   "summary": "This skill helps create publication-ready visualizations of neural population activity data from CSV files, generating heatmaps and population peristimulus time histograms (PSTHs) with proper statistical representations.",
-  "strategy": [
-    "Load and validate CSV data structure (trial, time, neuron_* columns)",
-    "Reshape data into trials × time × neurons array for efficient computation",
-    "Calculate trial-averaged firing rates and population statistics (mean, SEM)"
-  ],
-  "pitfalls": [
-    "Missing neuron columns: Always filter columns with `neuron_` prefix and handle cases where no neuron columns exist",
-    "Irregular time sampling: Use `pivot_table` with aggregation to handle duplicate time points per trial",
-    "Memory issues with large datasets: Process data in chunks or use memory-efficient pandas operations instead of loading entire arrays"
-  ],
-  "key_concepts": [
+  "preconditions": [
     "Validate CSV file exists and is readable before processing",
     "Check for required columns (trial, time) and at least one neuron column",
     "Handle missing values with appropriate interpolation or exclusion"
-  ]
+  ],
+  "strategy": [
+    "Load and validate CSV data structure (trial, time, neuron_* columns)",
+    "Reshape data into trials × time × neurons array for efficient computation",
+    "Calculate trial-averaged firing rates and population statistics (mean, SEM)",
+    "AVOID: Missing neuron columns: Always filter columns with `neuron_` prefix and handle cases where no neuron columns exist",
+    "AVOID: Irregular time sampling: Use `pivot_table` with aggregation to handle duplicate time points per trial",
+    "AVOID: Memory issues with large datasets: Process data in chunks or use memory-efficient pandas operations instead of loading entire arrays"
+  ],
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S007_data_viz/"
+  ],
+  "epigenetic_marks": [
+    "domain:visualization"
+  ],
+  "asset_id": "sha256:3d918b7e038cb2fb0fa91508afab1e837e1e993e2c5c0ac4901511d6a534636e"
 }

@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S068_weather_fronts",
-  "domain": "meteorology",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S068_weather_fronts",
+  "category": "optimize",
+  "signals_match": [
     "connected component labeling errors",
     "coordinate system confusion",
     "detection",
@@ -12,19 +14,28 @@
     "incorrect gradient scaling"
   ],
   "summary": "This skill enables detection of weather fronts by analyzing spatial temperature gradients in atmospheric data.",
-  "strategy": [
-    "**Load atmospheric data** from HDF5 file containing temperature grids, coordinates, and spatial metadata",
-    "**Apply Gaussian smoothing** to temperature field to reduce measurement noise while preserving front structures",
-    "**Calculate temperature gradients** in both spatial directions using central differences, converting to physical units (°C/km)"
-  ],
-  "pitfalls": [
-    "Incorrect gradient scaling: Forgetting to convert gradient units from °C/grid_point to °C/km using the grid_spacing parameter",
-    "Edge effects in gradients: Not handling array boundaries properly when computing central differences, leading to artifacts at data edges",
-    "Over-smoothing temperature data: Using excessive Gaussian smoothing that removes genuine meteorological front structures"
-  ],
-  "key_concepts": [
+  "preconditions": [
     "Validate HDF5 file structure and required datasets before processing",
     "Check for NaN/invalid values in temperature data and handle with masking",
     "Ensure gradient threshold and smoothing parameters are physically reasonable"
-  ]
+  ],
+  "strategy": [
+    "**Load atmospheric data** from HDF5 file containing temperature grids, coordinates, and spatial metadata",
+    "**Apply Gaussian smoothing** to temperature field to reduce measurement noise while preserving front structures",
+    "**Calculate temperature gradients** in both spatial directions using central differences, converting to physical units (°C/km)",
+    "AVOID: Incorrect gradient scaling: Forgetting to convert gradient units from °C/grid_point to °C/km using the grid_spacing parameter",
+    "AVOID: Edge effects in gradients: Not handling array boundaries properly when computing central differences, leading to artifacts at data edges",
+    "AVOID: Over-smoothing temperature data: Using excessive Gaussian smoothing that removes genuine meteorological front structures"
+  ],
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S068_weather_fronts/"
+  ],
+  "epigenetic_marks": [
+    "domain:meteorology"
+  ],
+  "asset_id": "sha256:043a2758e915b4ec7c5d27d8109231c24b529cb14b57be8f0e5ddb50ad57606f"
 }

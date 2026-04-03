@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S054_species_accumulation",
-  "domain": "ecology",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S054_species_accumulation",
+  "category": "optimize",
+  "signals_match": [
     "accumulation",
     "csv",
     "curve",
@@ -12,19 +14,28 @@
     "overinterpreting asymptotic estimates"
   ],
   "summary": "This skill enables computation and analysis of species accumulation curves from ecological sampling data using sample-based rarefaction methods.",
-  "strategy": [
-    "**Generate synthetic ecological data** with realistic species abundance distributions using log-normal patterns across multiple sampling sites",
-    "**Create site-by-species occurrence matrix** representing presence/absence data for biodiversity analysis",
-    "**Compute observed accumulation curves** through multiple random site orderings to calculate mean cumulative species richness and confidence intervals"
-  ],
-  "pitfalls": [
-    "Insufficient randomizations: Using too few iterations (<50) leads to unstable confidence intervals.",
-    "Unrealistic species distributions: Using uniform distributions creates unrealistic ecological patterns.",
-    "Ignoring sampling effort differences: Comparing raw accumulation curves between studies with different site numbers."
-  ],
-  "key_concepts": [
+  "preconditions": [
     "Validate that species pool size is larger than maximum species per site to prevent impossible sampling scenarios",
     "Check for empty sites or sites with no species and handle gracefully by excluding from analysis",
     "Implement bounds checking for rarefaction to prevent extrapolation beyond observed sample sizes"
-  ]
+  ],
+  "strategy": [
+    "**Generate synthetic ecological data** with realistic species abundance distributions using log-normal patterns across multiple sampling sites",
+    "**Create site-by-species occurrence matrix** representing presence/absence data for biodiversity analysis",
+    "**Compute observed accumulation curves** through multiple random site orderings to calculate mean cumulative species richness and confidence intervals",
+    "AVOID: Insufficient randomizations: Using too few iterations (<50) leads to unstable confidence intervals.",
+    "AVOID: Unrealistic species distributions: Using uniform distributions creates unrealistic ecological patterns.",
+    "AVOID: Ignoring sampling effort differences: Comparing raw accumulation curves between studies with different site numbers."
+  ],
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S054_species_accumulation/"
+  ],
+  "epigenetic_marks": [
+    "domain:ecology"
+  ],
+  "asset_id": "sha256:9f74599e92ff6d0196d9b890ec1e786c44a4f4bda2cdda8957827643bfbd217a"
 }

@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S045_ramachandran",
-  "domain": "structural_biology",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S045_ramachandran",
+  "category": "optimize",
+  "signals_match": [
     "angle periodicity issues",
     "color mapping confusion",
     "density estimation edge effects",
@@ -12,19 +14,28 @@
     "tool"
   ],
   "summary": "Creates a comprehensive protein backbone dihedral angle analysis tool that generates synthetic phi/psi angles, produces publication-quality Ramachandran plots, and identifies structural outliers using statistical methods.",
-  "strategy": [
-    "**Parse CLI arguments** and validate input parameters (residue count, thresholds, file paths)",
-    "**Generate synthetic dihedral angles** using realistic distributions for alpha-helix, beta-sheet, and random coil regions with appropriate scatter",
-    "**Perform statistical analysis** using kernel density estimation to identify outliers based on local density and z-score thresholds"
-  ],
-  "pitfalls": [
-    "Angle periodicity issues: Forgetting that -180° and +180° are the same angle can cause artifacts in density estimation and plotting.",
-    "Unrealistic angle distributions: Generating uniform random angles instead of biologically relevant clusters.",
-    "Density estimation edge effects: KDE can produce artifacts at plot boundaries."
-  ],
-  "key_concepts": [
+  "preconditions": [
     "Validate that outlier thresholds produce reasonable results (1-20% outliers)",
     "Check for file write permissions before processing data",
     "Handle edge cases where no outliers are detected or all points are outliers"
-  ]
+  ],
+  "strategy": [
+    "**Parse CLI arguments** and validate input parameters (residue count, thresholds, file paths)",
+    "**Generate synthetic dihedral angles** using realistic distributions for alpha-helix, beta-sheet, and random coil regions with appropriate scatter",
+    "**Perform statistical analysis** using kernel density estimation to identify outliers based on local density and z-score thresholds",
+    "AVOID: Angle periodicity issues: Forgetting that -180° and +180° are the same angle can cause artifacts in density estimation and plotting.",
+    "AVOID: Unrealistic angle distributions: Generating uniform random angles instead of biologically relevant clusters.",
+    "AVOID: Density estimation edge effects: KDE can produce artifacts at plot boundaries."
+  ],
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S045_ramachandran/"
+  ],
+  "epigenetic_marks": [
+    "domain:structural_biology"
+  ],
+  "asset_id": "sha256:d6bfbdbbb0dfcb2f74f382d9509e1e3b9996c2c4fae57aef31cba915fc34ad43"
 }

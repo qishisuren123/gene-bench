@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S115_quantum_circuit",
-  "domain": "quantum_computing",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S115_quantum_circuit",
+  "category": "optimize",
+  "signals_match": [
     "qubit",
     "state vector",
     "Hadamard",
@@ -12,17 +14,26 @@
     "entanglement"
   ],
   "summary": "Simulate quantum circuits by applying gate unitary matrices to a state vector and computing measurement probabilities for each basis state.",
+  "preconditions": [
+    "Hadamard creates superposition: H|0> = (|0>+|1>)/√2; CNOT creates entanglement: CNOT(H|0>⊗|0>) = (|00>+|11>)/√2",
+    "State vector has 2^n complex amplitudes; probabilities must sum to 1.0"
+  ],
   "strategy": [
     "Initialize 2^n state vector to |0...0>, then for each gate build the full unitary using tensor products with identity",
     "For controlled gates (CNOT, CZ): construct the controlled unitary using projectors |0><0|⊗I + |1><1|⊗U on control/target",
-    "Compute measurement probabilities P(outcome) = |amplitude|² and sample shots according to this distribution"
+    "Compute measurement probabilities P(outcome) = |amplitude|² and sample shots according to this distribution",
+    "AVOID: Qubit ordering convention matters: decide if qubit 0 is MSB or LSB and be consistent throughout",
+    "AVOID: For non-adjacent CNOT, either implement SWAP gates or directly construct the sparse controlled unitary"
   ],
-  "pitfalls": [
-    "Qubit ordering convention matters: decide if qubit 0 is MSB or LSB and be consistent throughout",
-    "For non-adjacent CNOT, either implement SWAP gates or directly construct the sparse controlled unitary"
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S115_quantum_circuit/"
   ],
-  "key_concepts": [
-    "Hadamard creates superposition: H|0> = (|0>+|1>)/√2; CNOT creates entanglement: CNOT(H|0>⊗|0>) = (|00>+|11>)/√2",
-    "State vector has 2^n complex amplitudes; probabilities must sum to 1.0"
-  ]
+  "epigenetic_marks": [
+    "domain:quantum_computing"
+  ],
+  "asset_id": "sha256:fab77072bca80e4321ed020bc2045e8b05b148d528eff42eb0f6ac92ef866926"
 }

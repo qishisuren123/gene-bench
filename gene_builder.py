@@ -110,7 +110,7 @@ def serialize_gene(gene: dict, level: str) -> str:
     parts = []
 
     if level in ("G1", "G2", "G3", "G4"):
-        signals = gene.get("signals_match", [])
+        signals = gene.get("signals_match", gene.get("keywords", []))
         if signals:
             parts.append(f"Domain keywords: {', '.join(signals)}")
 

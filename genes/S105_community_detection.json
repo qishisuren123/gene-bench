@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S105_community_detection",
-  "domain": "graph_analysis",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S105_community_detection",
+  "category": "optimize",
+  "signals_match": [
     "label propagation",
     "modularity",
     "Louvain",
@@ -11,17 +13,26 @@
     "density"
   ],
   "summary": "Detect overlapping communities in networks using label propagation or greedy modularity optimization without external graph libraries.",
+  "preconditions": [
+    "Modularity measures how much better the partition is compared to random graph with same degree sequence",
+    "Per-community density = 2 * internal_edges / (size * (size-1)) for undirected graphs"
+  ],
   "strategy": [
     "Build adjacency list representation from edge list, then initialize each node with a unique community label",
     "Iteratively update labels: each node adopts the most frequent label among its neighbors with random tie-breaking",
-    "Compute modularity Q to evaluate partition quality: Q = (1/2m) * sum[(A_ij - k_i*k_j/2m) * delta(c_i, c_j)]"
+    "Compute modularity Q to evaluate partition quality: Q = (1/2m) * sum[(A_ij - k_i*k_j/2m) * delta(c_i, c_j)]",
+    "AVOID: Label propagation can oscillate — use asynchronous updates (random node order each iteration) and convergence check",
+    "AVOID: For overlapping communities, allow nodes to belong to multiple communities if >30% of neighbors share that label"
   ],
-  "pitfalls": [
-    "Label propagation can oscillate — use asynchronous updates (random node order each iteration) and convergence check",
-    "For overlapping communities, allow nodes to belong to multiple communities if >30% of neighbors share that label"
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S105_community_detection/"
   ],
-  "key_concepts": [
-    "Modularity measures how much better the partition is compared to random graph with same degree sequence",
-    "Per-community density = 2 * internal_edges / (size * (size-1)) for undirected graphs"
-  ]
+  "epigenetic_marks": [
+    "domain:graph_analysis"
+  ],
+  "asset_id": "sha256:34f10b65f41ceb60a5c304c96685ecdf829d26eeb1a9bfde74ca42a190a4784e"
 }

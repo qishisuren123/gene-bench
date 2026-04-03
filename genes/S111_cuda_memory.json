@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S111_cuda_memory",
-  "domain": "gpu_computing",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S111_cuda_memory",
+  "category": "optimize",
+  "signals_match": [
     "CUDA",
     "memory allocation",
     "peak usage",
@@ -11,17 +13,26 @@
     "optimization"
   ],
   "summary": "Analyze GPU memory allocation events to find peak usage, detect fragmentation, and suggest optimization opportunities like early frees and dtype downcasts.",
+  "preconditions": [
+    "Memory efficiency = peak_used / total_GPU_memory — lower is better",
+    "dtype downcast float64→float32 saves 50% memory for tensors where precision isn't critical"
+  ],
   "strategy": [
     "Replay allocation/free events chronologically to reconstruct the memory timeline and find peak usage point",
     "Compute fragmentation as ratio of largest contiguous free block to total free memory at peak",
-    "Identify optimizations: tensors allocated long before last use (early-free candidates) and float64 tensors that could be float32"
+    "Identify optimizations: tensors allocated long before last use (early-free candidates) and float64 tensors that could be float32",
+    "AVOID: Track allocations by tensor_name for free matching — mismatched alloc/free pairs corrupt the timeline",
+    "AVOID: Fragmentation calculation requires tracking individual allocation positions, not just total used/free"
   ],
-  "pitfalls": [
-    "Track allocations by tensor_name for free matching — mismatched alloc/free pairs corrupt the timeline",
-    "Fragmentation calculation requires tracking individual allocation positions, not just total used/free"
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S111_cuda_memory/"
   ],
-  "key_concepts": [
-    "Memory efficiency = peak_used / total_GPU_memory — lower is better",
-    "dtype downcast float64→float32 saves 50% memory for tensors where precision isn't critical"
-  ]
+  "epigenetic_marks": [
+    "domain:gpu_computing"
+  ],
+  "asset_id": "sha256:51993540aca1385ea108007e9047d3d200b209005dc96f5fd12e2a4a51555ac6"
 }

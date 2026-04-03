@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S112_midi_chords",
-  "domain": "music",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S112_midi_chords",
+  "category": "optimize",
+  "signals_match": [
     "MIDI",
     "chord detection",
     "interval",
@@ -12,17 +14,26 @@
     "transition matrix"
   ],
   "summary": "Detect and classify chords from MIDI note events by grouping simultaneous notes and analyzing pitch class intervals.",
+  "preconditions": [
+    "Major triad intervals: [4, 3] semitones; Minor: [3, 4]; Dim: [3, 3]; Aug: [4, 4]",
+    "Key signature estimation: count frequency of each pitch class, match against major/minor scale templates"
+  ],
   "strategy": [
     "Group notes by temporal proximity (within max_gap ms) to form chord candidates",
     "Extract pitch classes (note % 12), compute pairwise intervals, and match against known chord templates",
-    "Build chord progression sequence and compute transition frequency matrix between chord types"
+    "Build chord progression sequence and compute transition frequency matrix between chord types",
+    "AVOID: MIDI note numbers must be converted to pitch classes (mod 12) before interval analysis",
+    "AVOID: Chord inversion: same notes in different octaves form the same chord — normalize to root position first"
   ],
-  "pitfalls": [
-    "MIDI note numbers must be converted to pitch classes (mod 12) before interval analysis",
-    "Chord inversion: same notes in different octaves form the same chord — normalize to root position first"
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S112_midi_chords/"
   ],
-  "key_concepts": [
-    "Major triad intervals: [4, 3] semitones; Minor: [3, 4]; Dim: [3, 3]; Aug: [4, 4]",
-    "Key signature estimation: count frequency of each pitch class, match against major/minor scale templates"
-  ]
+  "epigenetic_marks": [
+    "domain:music"
+  ],
+  "asset_id": "sha256:c1fd87335b3eb9dad8b12b351d625d9594bfe6875d0d6c75aa8d5ed6abae0074"
 }

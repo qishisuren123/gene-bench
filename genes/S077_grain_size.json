@@ -1,7 +1,9 @@
 {
-  "scenario_id": "S077_grain_size",
-  "domain": "geology",
-  "keywords": [
+  "type": "Gene",
+  "schema_version": "1.5.0",
+  "id": "gene_S077_grain_size",
+  "category": "optimize",
+  "signals_match": [
     "distribution",
     "division by zero in coefficients",
     "grain",
@@ -12,19 +14,28 @@
     "percentile calculation errors"
   ],
   "summary": "This skill enables analysis of grain size measurements from materials science image analysis, computing statistical distributions and classification metrics commonly used in materials characterization and metallography.",
-  "strategy": [
-    "**Parse Input Data**: Extract grain diameter measurements from command line arguments and convert to numerical arrays for statistical analysis",
-    "**Compute Basic Statistics**: Calculate fundamental statistical measures (mean, median, std dev, min, max) for the grain size dataset",
-    "**Calculate Distribution Percentiles**: Determine D10, D30, D50, D60, D90 percentiles and derive uniformity coefficients (Cu, Cc) for grain distribution characterization"
-  ],
-  "pitfalls": [
-    "Inadequate Bin Selection: Using default matplotlib bins can obscure important grain size distributions.",
-    "Percentile Calculation Errors: Using wrong interpolation method for percentiles can affect D-values critical for materials classification.",
-    "Division by Zero in Coefficients: D10 or D60 values of zero cause coefficient calculation failures."
-  ],
-  "key_concepts": [
+  "preconditions": [
     "Validate input data for non-negative values and reasonable grain size ranges (0",
     "Handle empty or malformed input strings with clear error messages",
     "Check for minimum dataset size requirements for reliable statistical analysis"
-  ]
+  ],
+  "strategy": [
+    "**Parse Input Data**: Extract grain diameter measurements from command line arguments and convert to numerical arrays for statistical analysis",
+    "**Compute Basic Statistics**: Calculate fundamental statistical measures (mean, median, std dev, min, max) for the grain size dataset",
+    "**Calculate Distribution Percentiles**: Determine D10, D30, D50, D60, D90 percentiles and derive uniformity coefficients (Cu, Cc) for grain distribution characterization",
+    "AVOID: Inadequate Bin Selection: Using default matplotlib bins can obscure important grain size distributions.",
+    "AVOID: Percentile Calculation Errors: Using wrong interpolation method for percentiles can affect D-values critical for materials classification.",
+    "AVOID: Division by Zero in Coefficients: D10 or D60 values of zero cause coefficient calculation failures."
+  ],
+  "constraints": {
+    "max_files": 1,
+    "forbidden_paths": []
+  },
+  "validation": [
+    "python -m pytest scenarios/S077_grain_size/"
+  ],
+  "epigenetic_marks": [
+    "domain:geology"
+  ],
+  "asset_id": "sha256:4fa6348eecd45e33a5c54d187e39373b4765296216a2f2cfc2cc5101f62bd27b"
 }

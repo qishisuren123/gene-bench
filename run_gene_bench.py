@@ -1,26 +1,14 @@
 #!/usr/bin/env python3
 """
-Gene-Bench 主实验脚本。
+Gene-Bench 主实验脚本（EX1-EX7）。
 
-从 skill-bench/run_benchmark.py fork 而来，新增：
-  - Gene 注入（G0-G4 级别）
-  - 双 API 通道（yunwu.ai + Gemini 直连）
-  - 12 模型注册表 + 分层成本追踪
-  - 7 个 RQ 的 trial 生成器
+实验编号统一使用 EX1-EX27：
+  - EX1-EX7: 本脚本（Gene 核心实验）
+  - EX8-EX27: run_evomap_experiments.py（EvoMap 双回路实验）
 
 用法:
-    # 试运行
-    python run_gene_bench.py --dry-run
-
-    # Pilot: 免费模型跑 RQ1
-    python run_gene_bench.py --rq rq1 \
-        --models gemini_3_pro,gemini_flash \
-        --scenarios S002_spike_behavior,S012_uv_spectroscopy \
-        --gemini-key "$GEMINI_KEY"
-
-    # 完整 RQ2
-    python run_gene_bench.py --rq rq2 \
-        --yunwu-key "$YUNWU_KEY" --gemini-key "$GEMINI_KEY"
+    python run_gene_bench.py --experiment ex1 --models gemini_pro,gemini_flash --gemini-key "$GEMINI_KEY"
+    python run_gene_bench.py --experiment all --dry-run
 """
 
 import argparse
@@ -99,11 +87,13 @@ NEW_SCENARIOS = [
 
 ALL_SCENARIOS = ORIGINAL_SCENARIOS + NEW_SCENARIOS
 
-# 各 RQ 使用的场景子集
-RQ1_SCENARIOS = ALL_SCENARIOS[:40]  # 全部 40 个（贵模型减到 15）
-RQ2_SCENARIOS = ALL_SCENARIOS[:30]  # 30 个场景
-RQ3_SCENARIOS = ALL_SCENARIOS[:15]  # 15 个场景
-RQ4_SCENARIOS_PAIRS = [
+# 统一场景集: 所有实验使用全部 45 个场景
+GENE_SENSITIVE_SCENARIOS = ALL_SCENARIOS  # 导出给 run_evomap_experiments.py 使用
+
+EX1_SCENARIOS = ALL_SCENARIOS
+EX2_SCENARIOS = ALL_SCENARIOS
+EX3_SCENARIOS = ALL_SCENARIOS
+EX4_SCENARIOS_PAIRS = [
     # (source_scenario, target_scenario, transfer_type)
     ("S090_noise_reduction", "S106_seismic_denoise", "analogous_task"),
     ("S068_weather_fronts", "S107_regime_switch", "analogous_task"),
@@ -118,9 +108,9 @@ RQ4_SCENARIOS_PAIRS = [
     ("S090_noise_reduction", "S093_echo_removal", "same_domain"),
     ("S012_uv_spectroscopy", "S077_grain_size", "same_domain"),
 ]
-RQ5_SCENARIOS = ALL_SCENARIOS[:10]
-RQ6_SCENARIOS = ALL_SCENARIOS[:10]
-RQ7_SCENARIOS = ALL_SCENARIOS[:15]
+EX5_SCENARIOS = ALL_SCENARIOS
+EX6_SCENARIOS = ALL_SCENARIOS
+EX7_SCENARIOS = ALL_SCENARIOS
 
 # Gene 完整度级别
 GENE_LEVELS = ["G0", "G1", "G2", "G3", "G4", "L1"]
@@ -131,12 +121,12 @@ GENE_MUTATION_TYPES = [
     "stale_paradigm", "overconstrained",
 ]
 
-# RQ6 自生成 Gene 的作者模型
-RQ6_AUTHOR_MODELS = ["opus", "haiku", "gpt5_4", "gemini_pro"]
+# EX6 自生成 Gene 的作者模型
+EX6_AUTHOR_MODELS = ["opus", "haiku", "gpt5_4", "gemini_pro"]
 
 # 固定参数
 TEMPERATURE = 0.0
-MAX_TOKENS = 8192
+MAX_TOKENS = 16384
 EVAL_TIMEOUT = 120
 
 
@@ -169,23 +159,21 @@ class TrialConfig:
 # ── Trial 生成器 ──
 
 def generate_rq1_trials(models: list[str], scenarios: list[str]) -> list[TrialConfig]:
-    """RQ1: Gene 完整度梯度 — 12 模型 × 40 场景 × 6 级别（贵模型 15 场景）"""
+    """EX1: Gene 完整度梯度 — N 模型 × 45 场景 × 6 级别"""
     trials = []
     for m in models:
-        # 贵模型减少场景数
-        sc_list = scenarios[:15] if m in EXPENSIVE_MODELS else scenarios
-        for s in sc_list:
+        for s in scenarios:
             for level in GENE_LEVELS:
                 trials.append(TrialConfig(
-                    scenario_id=s, model=m, rq="rq1",
-                    condition=f"rq1_{level}",
+                    scenario_id=s, model=m, rq="ex1",
+                    condition=f"ex1_{level}",
                     gene_level=level,
                 ))
     return trials
 
 
 def generate_rq2_trials(models: list[str], scenarios: list[str]) -> list[TrialConfig]:
-    """RQ2: Gene vs Skill 正面对决 — 12 模型 × 30 场景 × 4 条件"""
+    """EX2: Gene vs Skill 正面对决 — N 模型 × 45 场景 × 4 条件"""
     trials = []
     conditions = [
         ("no_context", "G0"),
@@ -197,29 +185,29 @@ def generate_rq2_trials(models: list[str], scenarios: list[str]) -> list[TrialCo
         for s in scenarios:
             for cond_name, level in conditions:
                 trials.append(TrialConfig(
-                    scenario_id=s, model=m, rq="rq2",
-                    condition=f"rq2_{cond_name}",
+                    scenario_id=s, model=m, rq="ex2",
+                    condition=f"ex2_{cond_name}",
                     gene_level=level,
                 ))
     return trials
 
 
 def generate_rq3_trials(models: list[str], scenarios: list[str]) -> list[TrialConfig]:
-    """RQ3: Gene 错误容忍度 — 12 模型 × 15 场景 × 6 条件"""
+    """EX3: Gene 错误容忍度 — N 模型 × 45 场景 × 6 条件"""
     trials = []
     for m in models:
         for s in scenarios:
             # clean baseline
             trials.append(TrialConfig(
-                scenario_id=s, model=m, rq="rq3",
-                condition="rq3_clean_g3",
+                scenario_id=s, model=m, rq="ex3",
+                condition="ex3_clean_g3",
                 gene_level="G3",
             ))
             # 5 种变异
             for mt in GENE_MUTATION_TYPES:
                 trials.append(TrialConfig(
-                    scenario_id=s, model=m, rq="rq3",
-                    condition=f"rq3_mutated_{mt}",
+                    scenario_id=s, model=m, rq="ex3",
+                    condition=f"ex3_mutated_{mt}",
                     gene_level="G3",
                     mutation_type=mt,
                 ))
@@ -227,15 +215,15 @@ def generate_rq3_trials(models: list[str], scenarios: list[str]) -> list[TrialCo
 
 
 def generate_rq4_trials(models: list[str]) -> list[TrialConfig]:
-    """RQ4: 跨领域 Gene 迁移 — 12 模型 × 12 场景对 × 5 条件"""
+    """EX4: 跨领域 Gene 迁移 — N 模型 × 12 场景对 × 5 条件"""
     trials = []
     for m in models:
-        sc_pairs = RQ4_SCENARIOS_PAIRS[:6] if m in EXPENSIVE_MODELS else RQ4_SCENARIOS_PAIRS
+        sc_pairs = EX4_SCENARIOS_PAIRS[:6] if m in EXPENSIVE_MODELS else EX4_SCENARIOS_PAIRS
         for source, target, transfer_type in sc_pairs:
             # 用 source 的 Gene 解 target 的任务
             trials.append(TrialConfig(
-                scenario_id=target, model=m, rq="rq4",
-                condition=f"rq4_{transfer_type}",
+                scenario_id=target, model=m, rq="ex4",
+                condition=f"ex4_{transfer_type}",
                 gene_level="G3",
                 transfer_source=source,
             ))
@@ -245,15 +233,15 @@ def generate_rq4_trials(models: list[str]) -> list[TrialConfig]:
             if target not in targets_seen:
                 targets_seen.add(target)
                 trials.append(TrialConfig(
-                    scenario_id=target, model=m, rq="rq4",
-                    condition="rq4_none",
+                    scenario_id=target, model=m, rq="ex4",
+                    condition="ex4_none",
                     gene_level="G0",
                 ))
     return trials
 
 
 def generate_rq5_trials(models: list[str], scenarios: list[str]) -> list[TrialConfig]:
-    """RQ5: Gene 组合效应 — 12 模型 × 10 场景 × 5 条件"""
+    """EX5: Gene 组合效应 — N 模型 × 45 场景 × 5 条件"""
     trials = []
     conditions = [
         ("single", "none"),
@@ -267,8 +255,8 @@ def generate_rq5_trials(models: list[str], scenarios: list[str]) -> list[TrialCo
             for cond_name, combo_mode in conditions:
                 level = "G0" if cond_name == "none" else "G3"
                 trials.append(TrialConfig(
-                    scenario_id=s, model=m, rq="rq5",
-                    condition=f"rq5_{cond_name}",
+                    scenario_id=s, model=m, rq="ex5",
+                    condition=f"ex5_{cond_name}",
                     gene_level=level,
                     combination_mode=combo_mode if cond_name != "single" else "none",
                 ))
@@ -276,36 +264,36 @@ def generate_rq5_trials(models: list[str], scenarios: list[str]) -> list[TrialCo
 
 
 def generate_rq6_trials(models: list[str], scenarios: list[str]) -> list[TrialConfig]:
-    """RQ6: 自生成 Gene — 12 模型 × 10 场景 × 6 条件"""
+    """EX6: 自生成 Gene — N 模型 × 45 场景 × 6 条件"""
     trials = []
     for m in models:
         for s in scenarios:
             # 4 个作者 Gene + 人工 Gene + 无 Gene
-            for author in RQ6_AUTHOR_MODELS:
+            for author in EX6_AUTHOR_MODELS:
                 trials.append(TrialConfig(
-                    scenario_id=s, model=m, rq="rq6",
-                    condition=f"rq6_author_{author}",
+                    scenario_id=s, model=m, rq="ex6",
+                    condition=f"ex6_author_{author}",
                     gene_level="G3",
                     gene_author=author,
                 ))
             # 人工 Gene
             trials.append(TrialConfig(
-                scenario_id=s, model=m, rq="rq6",
-                condition="rq6_human_gene",
+                scenario_id=s, model=m, rq="ex6",
+                condition="ex6_human_gene",
                 gene_level="G3",
                 gene_author="human",
             ))
             # 无 Gene
             trials.append(TrialConfig(
-                scenario_id=s, model=m, rq="rq6",
-                condition="rq6_none",
+                scenario_id=s, model=m, rq="ex6",
+                condition="ex6_none",
                 gene_level="G0",
             ))
     return trials
 
 
 def generate_rq7_trials(models: list[str], scenarios: list[str]) -> list[TrialConfig]:
-    """RQ7: Gene 接种效应 — 12 模型 × 15 场景 × 5 条件"""
+    """EX7: Gene 接种效应 — N 模型 × 45 场景 × 5 条件"""
     trials = []
     conditions = [
         ("none", "G0", False, "none"),
@@ -318,8 +306,8 @@ def generate_rq7_trials(models: list[str], scenarios: list[str]) -> list[TrialCo
         for s in scenarios:
             for cond_name, level, vacc, mt in conditions:
                 trials.append(TrialConfig(
-                    scenario_id=s, model=m, rq="rq7",
-                    condition=f"rq7_{cond_name}",
+                    scenario_id=s, model=m, rq="ex7",
+                    condition=f"ex7_{cond_name}",
                     gene_level=level,
                     mutation_type=mt,
                     vaccinated=vacc,
@@ -334,15 +322,15 @@ def load_gene_for_trial(trial: TrialConfig) -> Optional[dict]:
     if trial.gene_level == "G0":
         return None
 
-    # RQ6: 自生成 Gene
-    if trial.rq == "rq6" and trial.gene_author != "human":
+    # EX6: 自生成 Gene
+    if trial.rq == "ex6" and trial.gene_author != "human":
         author_path = GENES_DIR / "self_generated" / trial.gene_author / f"{trial.scenario_id}.json"
         if author_path.exists():
             with open(author_path) as f:
                 return json.load(f)
 
-    # RQ4: 跨领域迁移 — 加载 source 场景的 Gene
-    if trial.rq == "rq4" and trial.transfer_source != "none":
+    # EX4: 跨领域迁移 — 加载 source 场景的 Gene
+    if trial.rq == "ex4" and trial.transfer_source != "none":
         source_path = GENES_DIR / f"{trial.transfer_source}.json"
         if source_path.exists():
             with open(source_path) as f:
@@ -377,8 +365,8 @@ def prepare_system_prompt(trial: TrialConfig, gene: Optional[dict]) -> str:
         from gene_builder import mutate_gene
         gene = mutate_gene(gene, trial.mutation_type)
 
-    # RQ5 组合处理
-    if trial.combination_mode != "none" and trial.rq == "rq5":
+    # EX5 组合处理
+    if trial.combination_mode != "none" and trial.rq == "ex5":
         from gene_injector import inject_combined_genes
         # 加载互补/冲突 Gene（简化：用同领域其他场景的 Gene）
         extra_genes = _load_complementary_genes(trial)
@@ -584,7 +572,7 @@ def evaluate_code(code: str, scenario_dir: Path, timeout: int = EVAL_TIMEOUT) ->
                     "error_type": str(type(e).__name__)}
 
 
-# ── RQ6 Phase 1: 自生成 Gene ──
+# ── EX6 Phase 1: 自生成 Gene ──
 
 GENE_GENERATION_PROMPT = """Analyze the following task and generate a strategic "gene" — a concise, high-level strategy guide.
 
@@ -629,9 +617,9 @@ def generate_self_gene(model_key: str, scenario_id: str, task_desc: str,
 
 def run_rq6_phase1(scenarios: list[str], yunwu_key: str, gemini_key: str,
                     output_dir: Path):
-    """RQ6 Phase 1: 4 个作者模型 × N 场景 → 自生成 Gene"""
-    print("\n=== RQ6 Phase 1: Generating self-authored genes ===")
-    for author in RQ6_AUTHOR_MODELS:
+    """EX6 Phase 1: 4 个作者模型 × N 场景 → 自生成 Gene"""
+    print("\n=== EX6 Phase 1: Generating self-authored genes ===")
+    for author in EX6_AUTHOR_MODELS:
         author_dir = output_dir / "self_generated" / author
         author_dir.mkdir(parents=True, exist_ok=True)
 
@@ -798,30 +786,31 @@ def run_experiment(trials: list[TrialConfig], yunwu_key: str, gemini_key: str,
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Gene-Bench: Gene-level guided code generation experiments",
+        description="Gene-Bench: Gene-level guided code generation experiments (EX1-EX7)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   # Dry run
   python run_gene_bench.py --dry-run
 
-  # Pilot: 免费模型跑 RQ1
-  python run_gene_bench.py --rq rq1 \\
+  # Pilot: 免费模型跑 EX1
+  python run_gene_bench.py --experiment ex1 \\
       --models gemini_pro,gemini_flash \\
       --gemini-key "$GEMINI_KEY"
 
-  # RQ2: Gene vs Skill 正面对决
-  python run_gene_bench.py --rq rq2 \\
+  # EX2: Gene vs Skill 正面对决
+  python run_gene_bench.py --experiment ex2 \\
       --yunwu-key "$YUNWU_KEY" --gemini-key "$GEMINI_KEY"
 
-  # 全部 RQ
-  python run_gene_bench.py --rq all \\
+  # 全部 EX1-EX7
+  python run_gene_bench.py --experiment all \\
       --yunwu-key "$YUNWU_KEY" --gemini-key "$GEMINI_KEY"
 """)
 
-    parser.add_argument("--rq", choices=["rq1", "rq2", "rq3", "rq4", "rq5", "rq6", "rq7",
-                                          "pilot", "all"],
-                        default="all", help="Which RQ to run")
+    parser.add_argument("--experiment", "--rq", dest="experiment",
+                        choices=["ex1", "ex2", "ex3", "ex4", "ex5", "ex6", "ex7",
+                                 "pilot", "all"],
+                        default="all", help="Which experiment to run (EX1-EX7)")
     parser.add_argument("--models", type=str, default=None,
                         help=f"Comma-separated model list (default: all 12)")
     parser.add_argument("--scenarios", type=str, default=None,
@@ -839,15 +828,16 @@ Examples:
                         help="Print trial plan without executing")
     parser.add_argument("--force", action="store_true",
                         help="Override budget check")
-    parser.add_argument("--rq6-phase1", action="store_true",
-                        help="Run RQ6 Phase 1 (self-generate genes) only")
+    parser.add_argument("--ex6-phase1", "--rq6-phase1", dest="ex6_phase1",
+                        action="store_true",
+                        help="Run EX6 Phase 1 (self-generate genes) only")
 
     args = parser.parse_args()
 
     # 模型列表
     if args.models:
         models = [m.strip() for m in args.models.split(",")]
-    elif args.rq == "pilot":
+    elif args.experiment == "pilot":
         models = ["gemini_pro", "gemini_flash"]
     else:
         models = ALL_MODELS
@@ -866,9 +856,9 @@ Examples:
         if needs_gemini and not args.gemini_key:
             parser.error("--gemini-key required for Gemini models (or set GEMINI_API_KEY)")
 
-    # RQ6 Phase 1
-    if args.rq6_phase1:
-        scenarios = [s.strip() for s in args.scenarios.split(",")] if args.scenarios else RQ6_SCENARIOS
+    # EX6 Phase 1
+    if args.ex6_phase1:
+        scenarios = [s.strip() for s in args.scenarios.split(",")] if args.scenarios else EX6_SCENARIOS
         run_rq6_phase1(scenarios, args.yunwu_key, args.gemini_key, GENES_DIR)
         return
 
@@ -877,47 +867,47 @@ Examples:
 
     # 生成 trials
     trials = []
-    rq = args.rq
+    ex = args.experiment
 
-    if rq in ("rq1", "pilot", "all"):
-        sc = custom_scenarios or RQ1_SCENARIOS
+    if ex in ("ex1", "pilot", "all"):
+        sc = custom_scenarios or EX1_SCENARIOS
         t = generate_rq1_trials(models, sc)
-        print(f"RQ1: {len(t)} trials")
+        print(f"EX1: {len(t)} trials")
         trials.extend(t)
 
-    if rq in ("rq2", "all"):
-        sc = custom_scenarios or RQ2_SCENARIOS
+    if ex in ("ex2", "all"):
+        sc = custom_scenarios or EX2_SCENARIOS
         t = generate_rq2_trials(models, sc)
-        print(f"RQ2: {len(t)} trials")
+        print(f"EX2: {len(t)} trials")
         trials.extend(t)
 
-    if rq in ("rq3", "all"):
-        sc = custom_scenarios or RQ3_SCENARIOS
+    if ex in ("ex3", "all"):
+        sc = custom_scenarios or EX3_SCENARIOS
         t = generate_rq3_trials(models, sc)
-        print(f"RQ3: {len(t)} trials")
+        print(f"EX3: {len(t)} trials")
         trials.extend(t)
 
-    if rq in ("rq4", "all"):
+    if ex in ("ex4", "all"):
         t = generate_rq4_trials(models)
-        print(f"RQ4: {len(t)} trials")
+        print(f"EX4: {len(t)} trials")
         trials.extend(t)
 
-    if rq in ("rq5", "all"):
-        sc = custom_scenarios or RQ5_SCENARIOS
+    if ex in ("ex5", "all"):
+        sc = custom_scenarios or EX5_SCENARIOS
         t = generate_rq5_trials(models, sc)
-        print(f"RQ5: {len(t)} trials")
+        print(f"EX5: {len(t)} trials")
         trials.extend(t)
 
-    if rq in ("rq6", "all"):
-        sc = custom_scenarios or RQ6_SCENARIOS
+    if ex in ("ex6", "all"):
+        sc = custom_scenarios or EX6_SCENARIOS
         t = generate_rq6_trials(models, sc)
-        print(f"RQ6: {len(t)} trials")
+        print(f"EX6: {len(t)} trials")
         trials.extend(t)
 
-    if rq in ("rq7", "all"):
-        sc = custom_scenarios or RQ7_SCENARIOS
+    if ex in ("ex7", "all"):
+        sc = custom_scenarios or EX7_SCENARIOS
         t = generate_rq7_trials(models, sc)
-        print(f"RQ7: {len(t)} trials")
+        print(f"EX7: {len(t)} trials")
         trials.extend(t)
 
     print(f"\nTotal: {len(trials)} trials")
