@@ -649,7 +649,7 @@ def run_rq6_phase1(scenarios: list[str], yunwu_key: str, gemini_key: str,
 # ── 主实验循环 ──
 
 def run_experiment(trials: list[TrialConfig], yunwu_key: str, gemini_key: str,
-                   output_file: Path, dry_run: bool = False, n_threads: int = 8):
+                   output_file: Path, dry_run: bool = False, n_threads: int = 1):
     """执行实验（支持多线程并行）"""
     from budget_tracker import BudgetTracker
     from concurrent.futures import ThreadPoolExecutor, as_completed
