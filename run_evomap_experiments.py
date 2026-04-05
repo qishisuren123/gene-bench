@@ -1994,7 +1994,7 @@ def get_system_prompt(trial: EvoTrialConfig) -> str:
 
 
 def run_evomap_experiment(trials: list, gemini_key: str, yunwu_key: str,
-                          output_file: Path, dry_run: bool = False, n_threads: int = 1):
+                          output_file: Path, dry_run: bool = False, n_threads: int = 8):
     """执行 evomap 实验（支持多线程并行）"""
     from concurrent.futures import ThreadPoolExecutor, as_completed
     import threading

@@ -1,0 +1,1443 @@
+\documentclass{article}
+
+% if you need to pass options to natbib, use, e.g.:
+\PassOptionsToPackage{numbers, compress}{natbib}
+% before loading neurips
+
+
+% ready for submission
+\usepackage[final]{neurips}
+
+\input{header}
+\usepackage{xspace}
+\usepackage{xcolor}
+\newcommand{\blue}[1]{\textcolor{blue}{#1}}
+\usepackage{natbib}
+\usepackage{doi}
+
+% \newcommand{\datasetname}{{dataset}\xspace}
+% \newcommand{\modelname}{{model-7B}\xspace}
+
+\newcommand{\nbf}[1]{{\noindent \textbf{#1}}}
+
+\def\paperTitle{\includegraphics[height=14pt]{figures/logo.png} From Procedural Skills to Strategy Genes: Towards Experience-Driven Test-Time Evolution}
+
+\title{\paperTitle}
+
+\makeatletter
+\def\adl@drawiv#1#2#3{%
+	\hskip.5\tabcolsep
+	\xleaders#3{#2.5\@tempdimb #1{1}#2.5\@tempdimb}%
+	#2\z@ plus1fil minus1fil\relax
+	\hskip.5\tabcolsep}
+\newcommand{\cdashlinelr}[1]{%
+	\noalign{\vskip\aboverulesep
+		\global\let\@dashdrawstore\adl@draw
+		\global\let\adl@draw\adl@drawiv}
+	\cdashline{#1}
+	\noalign{\global\let\adl@draw\@dashdrawstore
+		\vskip\belowrulesep}}
+\makeatother
+
+\setlist[itemize]{align=parleft,left=0pt..0.5em}
+\setlist[enumerate]{align=parleft,left=0pt..0.5em}
+
+\setlength{\textfloatsep}{6pt}
+\setlength{\floatsep}{6pt}
+\setlist[itemize]{align=parleft,left=0pt..0.8em}
+
+\usepackage{booktabs}
+\newcolumntype{g}{>{\columncolor{airforceblue}}c}
+%\lstset{  literate=*{(}{{\textcolor{codeblue}{(}}}{1}
+%	{)}{{\textcolor{codeblue}{)}}}{1},}
+\lstset{escapeinside={<@}{@>}}
+
+\def\authorBlock{
+    Junjie Wang$^\textnormal{1,2}$\footnotemark[1] \qquad
+    Haoyang Zhang$^\textnormal{1}$\footnotemark[1] \qquad
+    Yiming Ren$^\textnormal{1,2}$\footnotemark[1] \qquad
+    Yuzhao Li$^\textnormal{1}$\footnotemark[1]
+    % \\
+    % \textbf{
+    % Your Name$^\textnormal{1}$\footnotemark[2] \qquad
+    % Your Name$^\textnormal{1}$\footnotemark[2] \qquad
+    % Your Name$^\textnormal{2}$
+    % }
+    \\\\\fontsize{10}{10}
+    \selectfont{$^\textnormal{1}$Infinite Evolution Lab, EvoMap} \quad
+    \selectfont{$^\textnormal{2}$Tsinghua University} \\
+    {\tt\small wangjunjie@sz.tsinghua.edu.cn},
+    {\tt\small 17@evomap.ai}, 
+    {\tt\small rym24@mails.tsinghua.edu.cn}, 
+    {\tt\small ram@evomap.ai}
+}
+
+\author{\authorBlock}
+
+\begin{document}
+
+\maketitle
+
+{
+  \renewcommand{\thefootnote}%
+  {\fnsymbol{footnote}}
+  \footnotetext[1]{Equal contribution \& Corresponding Author.}
+  % \footnotetext[2]{Corresponding Author.}
+}
+
+
+\begin{abstract}
+This beta technical report studies how reusable experience should be represented for test-time control and evolution.
+Across \blue{$13,329$ (was $3,060$)} controlled trials, we show that documentation-oriented skill packages are poorly aligned with test-time control: their useful signal is highly sparse, and expanding a compact skill into a fuller documentation package often fails to help and can even degrade performance.
+We further show that representation is a first-order factor: format, framing, and failure salience strongly affect whether prior experience acts as actionable control or merely as weak background context.
+\blue{[UPDATE abstract: effect sizes are much smaller on 45-scenario data (2--6pp vs 8--15pp). Core direction holds but claims need softening.]}
+Motivated by these findings, we introduce \emph{strategy genes}, a compact control-oriented experience representation.
+Genes are more effective, more structurally robust, and more reliably reusable than skill-style representations, while also providing a stronger substrate for test-time evolution.
+On CritPt, gene-evolved systems reach $18.57\%$ versus $9.1\%$ and $27.14\%$ versus $17.7\%$ for their paired base models, showing that iteratively refined genes can yield substantial gains beyond the underlying model.
+These results suggest that the central problem in experience reuse is not how to provide more experience, but how to represent reusable experience in a form suitable for control and evolution.
+\end{abstract}
+
+
+\section{Introduction}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{figures/teaser-p.pdf}
+\caption{
+Experience units for test-time control and their representative performance.
+(a) Three experience units with increasing control density: Skill-Full, a documentation-heavy package; Skill-Core, a compressed procedural unit; and Gene, a compact control-oriented representation.
+(b) Representative pass-rate change relative to baseline under the experimental pipeline. Despite containing less information, more compact and control-oriented experience units yield stronger test-time improvement, indicating that effectiveness depends on representation rather than content volume alone.
+}
+\label{fig:teaser}
+\end{figure}
+
+Large language model (LLM) agents are increasingly designed to improve through the accumulation and reuse of prior experience. 
+Unlike one-shot prompt engineering, a growing body of work equips agents with mechanisms such as reflection, reusable experience repositories, and structured skill artifacts to preserve useful information from past interactions and reuse it in subsequent problem solving~\cite{auto-agent-survey,LLM-based-agent}.
+Such experience may take the form of verbal reflection, external memory, executable skills, or experience libraries~\cite{Voyager,Reflexion,ExpeL}. 
+Although these approaches differ in implementation, most of them treat experience primarily as a content object that can be stored, retrieved, and replayed. 
+In contrast, this paper further asks whether such experience can in fact function as a stable and effective control signal at test time.
+
+This assumption is further reinforced by recent skill-style approaches. 
+Rather than preserving experience as free-form textual feedback or isolated case fragments, these methods tend to organize experience into procedural units with explicit interfaces, applicability conditions, and execution structure. 
+ProcMEM formulates experience as executable skills with explicit execution structure~\cite{ProcMEM}, while MemSkill further treats memory operations themselves as learnable and evolvable skills~\cite{MemSkill}. 
+Memento-Skills~\cite{Memento-Skills} and CoWork-X~\cite{CoWork-X} push this trend further by organizing experience as persistent, structured, and compositional skill libraries to support reliable and budget-aware improvement.
+Taken together, these studies reinforce a stronger assumption about reusable experience: more complete and structured experience representations should be more beneficial for subsequent task solving.
+
+Our point of departure is to test this assumption directly. 
+As shown in~\cref{fig:teaser}(b), our preliminary experiments show that more complete skill representations do not reliably lead to better test-time improvement. 
+Specifically, \texttt{Skill-Core}, at roughly $300$ tokens, yields a \blue{$+3.8$pp (was $+6.0$pp)} gain over the baseline, whereas \texttt{Skill-Full}, at roughly $600$ tokens, \blue{degrades performance to $-3.5$pp (was $-6.7$pp)} relative to the baseline. 
+These results shift attention to experience representation: \emph{which representation of reusable experience can serve as an effective and evolvable test-time control signal for LLM-based task solving?}
+
+Building on this observation, this paper reexamines the experience object itself. 
+We treat a \textbf{procedural skill} as a documentation-oriented experience object that is useful for human reading, instruction, and review, but not necessarily well suited to serve as a directly usable control signal under limited inference budget. 
+In contrast, the \textbf{strategy gene} proposed in this work is a more compact, structured, and behavior-oriented representation of experience.
+Its goal is not documentary completeness, but higher signal density, clearer applicability boundaries, and stronger failure salience within a constrained token budget. 
+Accordingly, a strategy gene is not merely a compressed version of a procedural skill, but a different abstraction of reusable experience. 
+To further support stable serialization, comparison, revision, and validation of such experience objects, we introduce the Gene Evolution Protocol (GEP) as a protocolized representation interface.
+
+To study this object-level shift, we conduct \blue{$13,329$ (was $3,060$)} controlled experiments on complex scientific tasks, spanning \blue{$15+$ (was $32$)} domains, and design three analytical probes. 
+The \textbf{Skill Probe} examines why procedural skills often fail to provide stable and effective test-time control. 
+The \textbf{Gene Probe} investigates why strategy genes can support experience-based control with lower budget and greater robustness. 
+The \textbf{Evolution Probe} asks which properties make strategy genes suitable as the substrate for continual accumulation and experience-driven evolution. 
+Taken together, these probes are not intended to compare a set of prompt tricks in isolation, but to systematically test a representational shift from \emph{documentation-oriented experience objects} to \emph{control-oriented, evolution-ready experience objects}.
+
+Our main findings are as follows.
+(1) \emph{Procedural skills} are often poorly aligned with the requirements of test-time control: in most cases, only a small number of high-density components contribute meaningfully, while much of the surrounding documentation imposes additional burden.
+(2) Representation is itself a first-order factor. Even when the underlying experience content is largely held constant, substantial performance differences still arise from variation in format, framing, and the degree of failure salience.
+(3) \emph{Strategy genes} are substantially more token-efficient than skill-style documents, suggesting that effective experience is not equivalent to longer instruction, but is better understood as a compact, structured, and executable control representation.
+(4) Failure-first gene instantiations are especially robust, suggesting that the value of reusable experience lies less in post hoc explanation than in low-cost prevention of known failure modes.
+
+The contributions of this paper are threefold:
+\begin{enumerate}[leftmargin=1.5em,itemsep=0pt,topsep=2pt]
+    \item We recast reusable experience from a problem of storing and invoking experience content into one of representing test-time control signals.
+    \item Through systematic probes, we identify and validate several key factors governing effective experience reuse, including information overload, format/framing effects, token efficiency, and failure salience.
+    \item We introduce strategy genes, organized under the Gene Evolution Protocol (GEP), as a protocolized control representation for reusable experience, and show in controlled scientific code-solving settings that they are more efficient, more robust, and better suited than conventional skill-style objects for test-time control.
+\end{enumerate}
+
+
+\section{Related Work}
+\label{sec:related_work}
+
+\subsection{Experience Reuse in Agents and Test-Time Improvement}
+
+A growing body of work improves LLM agents by enabling them to accumulate and reuse experience across tasks. 
+One line of research focuses on test-time refinement through critique, repair, and reflection, where models iteratively improve outputs using self-generated, execution-grounded, or tool-assisted feedback rather than parameter updates~\cite{Self-Refine,CRITIC,Self-Debug}. 
+Another line externalizes experience into persistent memory or reusable repositories, such as episodic verbal memory, natural-language lessons, and executable skill libraries that can be recalled in later tasks~\cite{Reflexion,ExpeL,Voyager}. 
+Although these approaches differ in mechanism, they largely share the same assumption: useful experience can be preserved as a reusable content object and later replayed to improve subsequent problem solving. 
+Our work is motivated by a prior question left open by this literature: once experience is preserved, what representation should it take when it re-enters the model at test time so that it functions as stable and effective control rather than merely additional context?
+
+\subsection{Experience Representation, Control, and Evolution}
+
+Recent work has begun to make reusable experience more structured, compact, and maintainable. 
+Procedural-memory and skill-centric approaches increasingly encode experience as explicit skill units with executable structure, learnable operations, or persistent external skill files~\cite{Memp,ProcMEM,MemSkill,Memento-Skills}. 
+Related systems further organize such units into structured and compositional skill libraries under reliability and budget constraints, or extract reusable expertise patterns from trajectories to support continual refinement~\cite{CoWork-X,AutoRefine}. 
+A closely related line studies how externalized experience should be maintained and evolved during deployment, emphasizing streaming updates, joint optimization of extraction and management, and even meta-evolution of memory architectures~\cite{Evo-Memory,TAME,UMEM,MemEvolve}. 
+Taken together, these works increasingly recognize that reusable experience should be compact, structured, and amenable to continual refinement. 
+However, their primary focus remains on how experience can be accumulated, maintained, or evolved once externalized. 
+By contrast, our focus is on a prior representational question: what kind of experience object is most suitable for acting as a test-time control signal in the first place? 
+This shift leads us from documentation-oriented experience objects toward compact, failure-aware, and protocolized control representations.
+
+\section{Experience Representations for Test-Time Control}
+\label{sec:representation}
+
+We study reusable experience as an \emph{experience representation}: an externalized object derived from prior problem solving and reintroduced at test time to influence model behavior. 
+This perspective shifts the focus from whether experience can be stored and recalled to what representational form allows it to function as effective test-time control. 
+It also motivates a distinction between documentation-oriented representations, optimized for human use, and control-oriented representations, optimized for model-facing inference under limited budget.
+
+\subsection{Reusable Experience Representations}
+\label{sec:rer}
+
+Let $\mathcal{H}=\{\tau_i\}_{i=1}^{n}$ denote a set of prior problem-solving trajectories. 
+We define a \emph{reusable experience representation} as an externalized object
+\begin{equation}
+r=\phi(\mathcal{H}), \qquad r \in \mathcal{R},
+\end{equation}
+where $\phi$ abstracts prior experience into a reusable representation space $\mathcal{R}$.
+
+Given a new task input $x$, a fixed model with parameters $\theta$ produces
+\begin{equation}
+y \sim p_{\theta}(\cdot \mid x, r).
+\end{equation}
+A representation is control-relevant only if it induces a measurable shift in test-time behavior:
+\begin{equation}
+p_{\theta}(y \mid x, r) \neq p_{\theta}(y \mid x, \varnothing)
+\end{equation}
+for a non-negligible subset of tasks under the target distribution.
+
+This definition excludes three nearby cases. 
+Reusable experience representations are not parameter updates, since $\theta$ remains fixed; not one-off prompt tricks, since they are abstracted from prior experience and intended for reuse; and not mere conversational recall, since their role is to provide task-relevant control rather than preserve dialogue continuity. 
+Accordingly, the central question is not only how experience is stored or retrieved, but what representational form allows prior experience to act as effective test-time control.
+
+\subsection{Procedural Skills}
+\label{sec:skills}
+
+A \emph{procedural skill} is a documentation-oriented experience representation that packages prior problem-solving knowledge into a human-readable and reusable form. 
+Its typical purpose is to support reading, instruction, review, and archival of prior experience, rather than direct behavioral control under constrained inference budget.
+
+At the structural level, a procedural skill can be represented as a document package
+\begin{equation}
+s = \{d_{\text{main}}, d_{\text{aux}}\},
+\end{equation}
+where the main document
+\begin{equation}
+d_{\text{main}} = \{\texttt{overview}, \texttt{workflow}, \texttt{pitfalls}, \texttt{error\ handling}\},
+\end{equation}
+captures the core procedural description, and the auxiliary part
+\begin{equation}
+d_{\text{aux}} = \{\texttt{api\_notes}, \texttt{examples}, \texttt{scripts}\}
+\end{equation}
+contains supplementary material for explanation, reference, and execution support. 
+This formulation matches our operational setup, in which \texttt{Skill-Core} corresponds to the main document alone, while \texttt{Skill-Full} includes both the main document and auxiliary components. 
+In our experimental setup, \texttt{Skill-Core} is approximately $300$ tokens, whereas \texttt{Skill-Full} expands to roughly $600$ tokens.
+
+Under this view, procedural skills are valuable because they externalize experience in a stable and communicable form. 
+They make prior solutions easier to document, teach, maintain, and transfer across tasks. 
+However, their design objective differs from that of model-facing inference-time control. 
+Procedural skills are optimized for human readability, not for model-facing test-time control. 
+A representation that is well suited for human understanding may therefore be suboptimal when injected into a model under limited token budget and constrained attention. 
+Whether documentation-oriented skill packages can also serve as effective control representations is thus an empirical question rather than an assumption.
+
+\subsection{Strategy Genes and the GEP Protocol}
+\label{sec:genes}
+
+We define a \emph{strategy gene} as a control-oriented experience representation distilled from prior problem-solving experience. 
+Unlike procedural skills, which package experience for reading, explanation, and review, a strategy gene is designed to deliver control-relevant experience under constrained inference budget. 
+Its objective is not documentary completeness, but compactness, structural clarity, behavioral targeting, and failure awareness. 
+Accordingly, a strategy gene is not a shortened skill, but a different abstraction of reusable experience.
+
+Formally, let $s$ denote a skill-style experience package and let $\mathcal{H}$ denote a set of prior problem-solving trajectories. 
+A strategy gene is obtained by a distillation map
+\begin{equation}
+g=\psi(s)\quad \text{or} \quad g=\psi(\mathcal{H}), \qquad g \in \mathcal{G},
+\end{equation}
+where $\psi$ extracts a compact control-oriented representation from a richer source experience object. 
+At the representation level, we model a gene as
+\begin{equation}
+g=(m,u,\pi,\alpha,c,v),
+\end{equation}
+where $m$ denotes task-matching signals, $u$ a compact summary, $\pi$ a small set of strategic steps, $\alpha$ a set of failure-aware \texttt{AVOID} cues, $c$ optional execution constraints, and $v$ optional validation hooks. 
+In our operational setup, this corresponds to a compact template containing keywords, summary, strategy, and \texttt{AVOID} fields, with optional constraint and validation metadata.
+
+This structure differs from procedural skills in both organization and purpose. 
+Skills organize experience according to documentation logic; genes organize experience according to control logic. 
+Skills prioritize readability and completeness; genes prioritize signal density, applicability boundaries, and failure salience. 
+The intended use is therefore different as well: a procedural skill is primarily a documentation artifact, whereas a strategy gene is a model-facing control representation.
+
+This distinction also explains why genes require protocolization. 
+Without a protocol layer, a gene remains a free-form prompt fragment whose boundaries are unstable and whose internal fields are difficult to compare, manipulate, or accumulate systematically. 
+We therefore introduce the \emph{Gene Evolution Protocol} (GEP) as a representation interface that canonicalizes genes into structured objects:
+\begin{equation}
+\tilde{g}=\Gamma(g), \qquad \tilde{g}\in\widetilde{\mathcal{G}},
+\end{equation}
+where $\Gamma$ maps a raw gene instance into a canonical protocol-compliant form. 
+
+In the GEP view, genes are the atomic capability units, while higher-level objects such as capsules and events capture validated execution paths and immutable evolution logs, respectively. 
+Our focus in this paper is the gene layer, because it is the minimal reusable unit that can directly function as test-time control, while still supporting composition and evolution under a shared protocol. 
+A fuller protocol-level formalization of GEP, including genes, capsules, events, and the protocol loop, is provided in~\cref{app:gep} and~\cref{tab:gep_schema}.
+
+Canonicalization through GEP serves three purposes. 
+First, it provides stable boundaries and internal structure, making genes explicit objects rather than ad hoc text snippets. 
+Second, it makes genes comparable and operable: once protocolized, genes can be matched, replaced, revised, and composed at the object level. 
+Third, it provides the minimal interface required for accumulation and evolution, so that experience units can be inherited, corrected, validated, and iteratively refined over time. 
+In this sense, GEP is not a formatting detail, but the protocol layer that lifts a control-oriented representation into an evolution-ready experience object. 
+If procedural skills are documentation artifacts, strategy genes under the GEP protocol are evolution-ready control representations.
+
+
+
+\subsection{Test-Time Control and Experimental Scope}
+\label{sec:ttc_scope}
+
+\subsubsection{Experimental Settings}
+
+In this paper, \emph{test-time control} refers to the ability of an externalized experience representation to alter model behavior before or during generation without modifying model parameters. 
+The intervention therefore operates at inference time rather than through training-time adaptation or post hoc parameter repair. 
+Formally, given a task input $x$ and a reusable experience representation $r$, a fixed model with parameters $\theta$ generates
+\begin{equation}
+y \sim p_{\theta}(\cdot \mid x, r; \gamma),
+\end{equation}
+where $\gamma$ denotes the inference configuration. 
+In our experiments, $\gamma$ is fixed across conditions, with temperature $T=0.0$ and maximum output length set to \blue{$16,384$ (was $8,192$)} tokens. 
+Operationally, the experience representation is injected through a system-level instruction channel that is separated from the task input itself, allowing it to function as an explicit control signal rather than as part of the user prompt.
+We focus on code-centric scientific task solving, where the model output $y$ is an executable Python program rather than free-form text. 
+
+Evaluation is execution-based. 
+Given task input $x$ and generated code $y$, the evaluation pipeline runs the program in a sandbox and applies a predefined unit test suite:
+\begin{equation}
+\mathrm{Eval}(x,y) \in \{\textsc{Pass}, \textsc{Fail}\}.
+\end{equation}
+A trial is counted as \textsc{Pass} only if all predefined test cases succeed; otherwise it is counted as \textsc{Fail}. 
+Each trial is executed under a timeout of $120$ seconds. 
+For a condition with $N$ trials, we define pass rate as
+\begin{equation}
+\mathrm{PassRate} = \frac{1}{N}\sum_{i=1}^{N}\mathbf{1}\!\left[\mathrm{Eval}(x_i,y_i)=\textsc{Pass}\right],
+\end{equation}
+% and report improvement relative to the no-guidance baseline in percentage points:
+% \begin{equation}
+% \Delta_{\mathrm{pp}} = \mathrm{PassRate}_{\mathrm{cond}} - \mathrm{PassRate}_{\mathrm{base}}.
+% \end{equation}
+% This metric is intentionally strict: partial correctness does not count as success, and all reported gains reflect absolute pass-rate differences rather than relative percentage increases.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/domain_trials_pie.pdf}
+\caption{Domain-level trial distribution of the benchmark used in this paper. \blue{UPDATE: The retained analyses now cover 13,329 trials across 45 scenarios in 15+ domains (was 3,060 trials across 32 domains).}}
+\label{fig:domain_trial_distribution}
+\end{figure}
+
+
+All experiments use two fixed Gemini models, Gemini 3.1 Pro Preview (Pro) and Gemini 3.1 Flash Lite Preview (Flash), and comprise \blue{$13,329$ (was $3,060$)} controlled trials in total. 
+Avg. denotes the arithmetic mean over Pro and Flash.
+As shown in~\cref{fig:domain_trial_distribution}, representative tasks include protein parsing, UV-Vis spectroscopy peak detection, exoplanet transit analysis, earthquake catalog processing, climate attribution, community detection, and inventory reordering.
+We provide the detailed settings in~\cref{app:exp_setup}.
+This setup provides a concrete and executable testbed for comparing documentation-oriented and control-oriented experience representations under a common generation interface, common evaluation protocol, and fixed model parameters.
+
+\subsubsection{Running Example}
+
+We use \texttt{S012\_uv\_spectroscopy} as a running example. 
+The task requires generating a Python program that reads UV-Vis spectra from CSV files and outputs peak properties such as wavelength, height, FWHM, and area. 
+Two recurring failure modes are to treat \texttt{min\_distance} as a wavelength value rather than converting it to sample-point indices before calling \texttt{scipy.signal.find\_peaks}, and to use the raw output of \texttt{peak\_widths} without converting it back to wavelength units.
+
+\nbf{Skill-Core.}
+\texttt{Skill-Core} is the main \texttt{SKILL.md} document, typically containing an overview, a procedural workflow, common pitfalls, and basic error-handling notes.
+
+\nbf{Skill-Full.}
+\texttt{Skill-Full} extends \texttt{Skill-Core} with auxiliary materials such as \texttt{api\_notes}, \texttt{examples}, and \texttt{scripts}.
+
+\nbf{Strategy Gene.}
+The corresponding gene takes a compact control-oriented form:
+\begin{quote}
+\small
+\texttt{<strategy-gene>} \\
+\texttt{Domain keywords: csv, detection, fwhm calculation errors, uv-vis} \\
+\texttt{Summary: Detect and analyze absorption peaks in UV-Vis spectra} \\
+\texttt{Strategy:} \\
+\texttt{1. Load CSV data with wavelength and absorbance columns} \\
+\texttt{2. Apply \texttt{scipy.signal.find\_peaks} with prominence-based detection} \\
+\texttt{3. AVOID: Convert min-distance using actual wavelength spacing} \\
+\texttt{4. AVOID: Convert \texttt{peak\_widths} outputs from indices to wavelength units} \\
+\texttt{</strategy-gene>}
+\end{quote}
+
+\nbf{Execution-based evaluation.}
+The generated program is executed in a sandbox and evaluated against predefined unit tests covering output structure, peak count, wavelength accuracy, FWHM accuracy, and dominant peak identification. 
+Failing to convert \texttt{min\_distance} into sample-point indices causes the peak-count test to fail, and the entire trial is marked as \textsc{Fail}. 
+Only programs that pass all tests are counted as \textsc{Pass}. 
+This example illustrates our central comparison: the same underlying knowledge yields different control properties when encoded as a procedural skill or as a strategy gene.
+
+\section{Results and Analysis}
+
+We organize the retained analyses into three probes, each targeting a different level of the representational shift studied in this paper. The Skill Probe asks why documentation-oriented procedural skills often fail to function as stable test-time control. The Gene Probe then examines whether strategy genes should be understood not merely as stronger prompts, but as a distinct experience representation. Finally, the Evolution Probe investigates why such representations form a better substrate for attaching failure knowledge and evolution context. We begin with the Skill Probe, because the central empirical question is first negative: why does a representation that is useful for documentation, teaching, and archival fail once it is injected as model-facing control under limited inference budget?
+
+\subsection{Skill Probe: Documentation-Oriented Skills Are Misaligned with Test-Time Control}
+
+We begin by asking why procedural skills, despite being useful as documentation-oriented experience objects, often fail as model-facing test-time control. Across the retained Skill Probe analyses, the central issue is not the absence of useful experience, but a representational mismatch: control-relevant signals are sparse within the skill object and are further weakened by documentation-oriented formatting and framing.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/skill-components.pdf}
+\caption{Diagnosing where skill-style guidance helps. (a) Control value is highly unevenly distributed inside the skill object: among the tested standalone components, \texttt{examples.md} is the only clearly effective contributor. (b) Under a roughly matched budget of around $120$ tokens, \texttt{Gene} still outperforms truncated skill fragments.}
+\label{fig:skill_sparse_budget}
+\end{figure}
+
+\subsubsection{Control value is sparse inside the skill object}
+
+We first ask whether a procedural skill behaves as a coherent control object at test time, or whether its effect is carried only by a small subset of internal components. 
+This diagnosis is based on component attribution and budget-matched comparison over a total of $360$ trials. 
+As previewed by the teaser in~\cref{fig:teaser}(b), increasing documentary completeness does not improve control effectiveness: \texttt{Skill-Core} remains beneficial, whereas \texttt{Skill-Full} degrades. 
+We therefore turn to~\cref{fig:skill_sparse_budget}, which decomposes the skill object and compares compact skill-derived variants under approximately matched budgets.
+
+\nbf{\texttt{examples.md} is the only clearly valuable standalone component within the skill object.}
+\blue{[UPDATE: New EX22 (630 trials, 45 scenarios) shows different ranking: workflow(52.5\%) $\approx$ gene\_g3(52.3\%) $>$ quick\_ref(50.4\%) $>$ error\_handling(51.2\%) $>$ pitfalls(49.1\%) $>$ none(48.7\%) $>$ overview(46.6\%). The ``examples.md'' component was not tested separately; workflow is now the best standalone component, not examples.md.]}
+As shown in~\cref{fig:skill_sparse_budget}(a), \texttt{examples.md} reaches \blue{N/A (was $+6.2$pp)}, nearly matching \texttt{Skill-Core} at \blue{N/A (was $+6.0$pp)}, whereas \texttt{Workflow} contributes \blue{$+3.8$pp (was only $+2.1$pp)}, and both \texttt{API notes} (\blue{N/A, was $-0.4$pp}) and \texttt{Pitfalls} (\blue{$+0.4$pp, was $-1.3$pp}) fail to help on average. 
+This suggests that the effect of \texttt{Skill-Core} is not produced by the skill object as a whole, but largely by a very small number of high-density fragments.
+
+\nbf{\texttt{Gene} exceeds \texttt{Skill-Core} with fewer tokens and remains stronger under a roughly matched budget.}
+\blue{[UPDATE: New EX23 (450 trials) shows mixed\_truncated(56.9\%) $>$ Gene(54.3\%) $>$ workflow\_trunc(52.5\%) $\approx$ pitfalls\_trunc(52.4\%) $>$ none(52.0\%). Gene no longer strictly best; mixed truncation of multiple sources beats Gene.]}
+As shown in~\cref{fig:skill_sparse_budget}(b), even after truncating skill-derived content to about the same scale, \texttt{Gene} remains strongest: the best budget-matched skill fragment, top-$3$ \texttt{Pitfalls}, reaches \blue{$+0.4$pp (was $+7.6$pp)}, whereas a compact \texttt{Overview + 2 pitfalls} note reaches \blue{$+4.9$pp (was $+4.5$pp)} and top-$3$ \texttt{Workflow} reaches \blue{$+0.5$pp (was only $+2.8$pp)}. 
+The advantage of \texttt{Gene} therefore does not come from brevity alone, but from more efficient organization of task-critical information.
+
+\nbf{Additional text beyond \texttt{Skill-Core} does not reliably translate into benefit.}
+In our setup, \texttt{Skill-Core} corresponds to the main document alone, whereas \texttt{Skill-Full} includes both the main document and auxiliary components, expanding the object from roughly $300$ tokens to roughly $600$ tokens. 
+These auxiliary materials are useful for explanation, reference, and maintenance, but their design objective differs from that of model-facing inference-time control. 
+Once the few genuinely useful fragments are embedded in a larger documentation-heavy object, their effect is diluted by content that is weakly aligned with generation-time control.
+
+\begin{table}[t]
+\centering
+\caption{Format, framing, and failure salience as first-order control factors. All three analyses share the same no-guidance baseline on the fixed $15$-scenario diagnostic subset. \blue{[MAJOR UPDATE: All three sub-tables need rewriting with 45-scenario data. See notes below each section.]}}
+\label{tab:format_framing}
+\begin{adjustbox}{max width=\columnwidth}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Category} & \textbf{Condition} & \textbf{Avg. pass rate} & \textbf{Avg. vs baseline} \\
+\midrule
+\multirow{7}{*}{\blue{Format (EX17)}}
+& Baseline & \blue{$49.8\%$ (was $46.7\%$)} & $+0.0$pp \\
+& \cellcolor{bestRow} \blue{Paragraph (was XML)} & \cellcolor{bestRow} \blue{$51.7\%$ (was $56.1\%$)} & \cellcolor{bestRow}\blue{+1.9pp (was +9.4pp)} \\
+& \blue{Markdown (was JSON)} & \blue{$50.3\%$ (was $51.5\%$)} & \blue{+0.5pp (was +4.8pp)} \\
+& \blue{XML (was Checklist)} & \blue{$49.3\%$ (was $49.8\%$)} & \blue{-0.5pp (was +3.1pp)} \\
+& \blue{Keyword (was Paragraph)} & \blue{$49.1\%$ (was $47.9\%$)} & \blue{-0.7pp (was +1.2pp)} \\
+& \blue{Bullet list (was Keyword)} & \blue{$49.0\%$ (was $46.0\%$)} & \blue{-0.8pp (was -0.7pp)} \\
+& \blue{[REVERSAL: XML no longer best; format differences $<$3pp]} & & \\
+\midrule
+\multirow{6}{*}{\blue{Framing (EX13)}}
+& Baseline & \blue{$48.2\%$ (was $46.7\%$)} & $+0.0$pp \\
+& \cellcolor{bestRow} \blue{Teaching (was WARNING)} & \cellcolor{bestRow} \blue{$52.5\%$ (was $57.2\%$)} & \cellcolor{bestRow}\blue{+4.4pp (was +10.5pp)} \\
+& \blue{Suggestive (was Checklist)} & \blue{$52.5\%$ (was $51.9\%$)} & \blue{+4.4pp (was +5.2pp)} \\
+& \blue{Imperative (was Story)} & \blue{$49.7\%$ (was $49.8\%$)} & \blue{+1.6pp (was +3.1pp)} \\
+& \blue{Socratic (was Neutral)} & \blue{$48.9\%$ (was $47.6\%$)} & \blue{+0.7pp (was +0.9pp)} \\
+& \blue{WARNING (was Teaching)} & \blue{$48.6\%$ (was $39.8\%$)} & \blue{+0.5pp (was -6.9pp)} \\
+& \blue{[REVERSAL: Teaching now best, WARNING mediocre]} & & \\
+\midrule
+\multirow{5}{*}{\blue{Failure cue (EX14)}}
+& Baseline & \blue{$50.2\%$ (was $46.7\%$)} & $+0.0$pp \\
+& \cellcolor{bestRow} Real failure experience & \cellcolor{bestRow} \blue{$55.0\%$ (was $55.7\%$)} & \cellcolor{bestRow}\blue{+4.7pp (was +9.0pp)} \\
+& \blue{Generic warning} & \blue{$54.7\%$ (was $51.2\%$)} & \blue{+4.5pp (was $+4.5$pp)} \\
+& \blue{Fake but plausible} & \blue{$50.9\%$ (was $47.2\%$)} & \blue{$+0.7$pp (was $+0.5$pp)} \\
+& \blue{Absurd warning} & \blue{$42.4\%$ (was $51.7\%$)} & \blue{$-7.9$pp (was $+5.0$pp)} \\
+& \blue{[REVERSAL: Absurd warning now harmful (-7.9pp), was positive (+5.0pp)]} & & \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+\subsubsection{Format and framing are first-order factors}
+
+We next ask whether representational form is merely a packaging choice, or whether it directly determines whether prior experience can function as effective test-time control. To isolate this effect, we examine three retained analyses over a total of $540$ trials: format comparison, framing comparison, and failure-cue comparison. All three analyses are conducted on the same fixed $15$-scenario diagnostic subset and therefore share the same no-guidance baseline, with an average pass rate of $46.7\%$. The results are summarized in~\cref{tab:format_framing}.
+
+\nbf{\blue{[REVERSAL]} \texttt{XML} is the best-performing format, whereas the original document-style format is itself part of the problem.}
+\blue{[UPDATE: New data (EX17, 540 trials, 45 scenarios) shows format differences are much smaller ($<$3pp spread). Paragraph(51.7\%) slightly leads, XML(49.3\%) is below baseline. The claim that ``XML is clearly best'' no longer holds. Rewrite to note format effect is weak on broader scenarios.]}
+\texttt{XML} reaches \blue{$49.3\%$ ($-0.5$pp) (was $56.1\%$, $+9.4$pp)}, \blue{no longer} clearly outperforming all other format variants, while \texttt{Markdown} \blue{reaches $50.3\%$ ($+0.5$pp) (was $45.4\%$, $-1.3$pp))}.
+
+\nbf{\blue{[REVERSAL]} \texttt{WARNING} is the most effective framing, whereas \texttt{Teaching} is markedly weaker as control.}
+\blue{[UPDATE: New data (EX13, 540 trials) reverses this completely. Teaching(52.5\%) and Suggestive(52.5\%) are now best, WARNING(48.6\%) is mediocre (+0.5pp). The old 15-scenario result was an artifact of small sample.]}
+A similarly large gap \blue{no longer} appears in framing. \texttt{WARNING} achieves \blue{$48.6\%$ ($+0.5$pp) (was $57.2\%$, $+10.5$pp)}, whereas \texttt{Teaching} \blue{rises to $52.5\%$ ($+4.4$pp) (was $39.8\%$, $-6.9$pp))}.
+
+\nbf{Real failure experience is far more effective than weak or fabricated failure cues.}
+\blue{[UPDATE: Direction holds but absurd warning is now harmful. Real(55.0\%, +4.7pp) $>$ Generic(54.7\%) $>$ Fake(50.9\%) $>$ none(50.2\%) $>$ Absurd(42.4\%, -7.9pp). Absurd was +5.0pp in old data, now -7.9pp.]}
+The failure-cue comparison makes this point even sharper. Real failure experience yields about \blue{$55.0\%$ ($+4.7$pp) (was $55.7\%$, $+9.0$pp)}, clearly above absurd or generic warnings, while fake but plausible failure descriptions collapse to only about \blue{$50.9\%$ ($+0.7$pp) (was $47.2\%$, $+0.5$pp)}. \blue{Absurd warnings are now harmful at $42.4\%$ ($-7.9$pp), reversing the old $+5.0$pp.}
+
+Taken together, these results show that representation is itself a first-order factor in test-time control rather than a superficial packaging layer around reusable experience.
+
+\subsection{Gene Probe: Strategy Genes Are a Better Representation of Reusable Experience}
+
+
+We now turn from the failure of documentation-oriented skills to the properties of strategy genes themselves. Across the retained Gene Probe analyses, the question is not merely whether \texttt{Gene} can outperform skill-style guidance in some settings, but what kind of experience representation it is.
+
+\nbf{Gene advantage is not merely prompt advantage.}
+At first glance, the advantage of \texttt{Gene} may seem like a prompt-level effect: a shorter or cleaner instruction performs better than a documentation-heavy skill package. However, this interpretation is too weak for the evidence that follows. In this paper, \texttt{Skill} and \texttt{Gene} are not simply prompts of different lengths, but two different abstractions of reusable experience: the former is organized by documentation logic, whereas the latter is organized by control logic. If the gain of \texttt{Gene} were only a matter of prompt engineering, then the later analyses would not be expected to reveal object-level properties such as non-complementarity with skill, robustness under imperfect content, authorship independence, and bounded cross-task reuse.
+Additional experiments are provided in~\cref{app:gene_supplementary}.
+
+\subsubsection{Gene is not simply complementary to skill}
+
+We first test whether genes should be understood as compact replacements for skill-style experience, or as objects that merely become stronger when supplemented with skill components. 
+This comparison is based on a direct complementarity test over $180$ trials, and the results are summarized in~\cref{tab:gene_vs_skill}.
+
+
+\begin{table}[h]
+\centering
+\caption{Gene is not simply complementary to skill-style guidance. \blue{[UPDATE: EX24 (450 trials, 45 scenarios) reverses ranking. Skill-Full(55.5\%) $>$ Gene+API(55.1\%) $>$ Gene alone(53.0\%) $>$ none(51.8\%) $>$ Gene+examples(51.6\%). Gene alone is no longer best.]}}
+\label{tab:gene_vs_skill}
+\begin{adjustbox}{max width=\columnwidth}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Condition} & \textbf{Avg. pass rate} & \textbf{Avg. vs baseline} & \textbf{Interpretation} \\
+\midrule
+Baseline & \blue{$51.8\%$ (was $46.7\%$)} & $+0.0$pp & Reference \\
+\texttt{Skill-Core} alone & \blue{N/A -- replaced by Skill-Full $55.5\%$ (was $52.7\%$)} & \blue{$+3.7$pp (was $+6.0$pp)} & \blue{Now best, was weaker} \\
+\texttt{Gene} + \texttt{API notes} & \blue{$55.1\%$ (was $53.7\%$)} & \blue{$+3.3$pp (was $+7.0$pp)} & \blue{Close second} \\
+\texttt{Gene} + \texttt{examples.md} & \blue{$51.6\%$ (was $54.4\%$)} & \blue{$-0.2$pp (was $+7.7$pp)} & \blue{Now harmful, was helpful} \\
+\cellcolor{bestRow}\texttt{Gene} alone & \cellcolor{bestRow}\blue{$53.0\%$ (was $55.0\%$)} & \cellcolor{bestRow}\blue{$+1.2$pp (was $+8.3$pp)} & \cellcolor{bestRow}\blue{No longer best} \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+
+\nbf{\texttt{Gene} alone is stronger than \texttt{Skill-Core} alone.}
+\blue{[UPDATE: New data reverses this. Skill-Full(55.5\%) $>$ Gene+API(55.1\%) $>$ Gene alone(53.0\%) $>$ none(51.8\%). Gene alone is weaker than Skill-Full. However, Gene's token efficiency (53.0\% / 120 tok) remains much higher than Skill-Full (55.5\% / 600 tok).]}
+\texttt{Gene} alone reaches \blue{$53.0\%$ ($+1.2$pp) (was $55.0\%$, $+8.3$pp)}, \blue{slightly below} \texttt{Skill-Core} alone at \blue{Skill-Full $55.5\%$ ($+3.7$pp) (was $52.7\%$, $+6.0$pp)}.
+
+\nbf{Adding skill components back to \texttt{Gene} usually dilutes rather than complements it.}
+\blue{[UPDATE: Partially reversed. Gene+API(55.1\%) improves over Gene alone(53.0\%), but Gene+examples(51.6\%) hurts. Dilution claim only holds for examples, not API notes.]}
+When \texttt{examples.md} or \texttt{API notes} are reattached to \texttt{Gene}, performance \blue{changes to $51.6\%$ ($-0.2$pp) and $55.1\%$ ($+3.3$pp) respectively (was $54.4\%$ and $53.7\%$)}.
+
+\subsubsection{Genes remain useful beyond literal correctness}
+
+We next test whether the value of a gene depends mainly on literal correctness, or whether part of its effect comes from a more stable structural template. 
+To isolate this effect, we perturb gene content in several ways over a total of $180$ trials, including content-level mutations such as \texttt{Outdated technique}, \texttt{Wrong algorithm}, and \texttt{Wrong domain}, as well as structure-breaking perturbations such as \texttt{Step-reversed} and \texttt{Over-constrained}. 
+The results are summarized in~\cref{fig:gene_mutation}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{figures/gene-mutation.pdf}
+\caption{Structural robustness of genes under imperfect content. The content perturbations such as \texttt{Wrong domain}, \texttt{Wrong algorithm}, and \texttt{Outdated technique} remain relatively close to the \texttt{Correct gene} condition, whereas structure-breaking perturbations, especially \texttt{Over-constrained}, are substantially more harmful. This pattern suggests that the usefulness of a gene depends less on literal correctness alone than on preserving a flexible and control-relevant strategy structure.}
+\label{fig:gene_mutation}
+\end{figure}
+
+\nbf{Most content perturbations remain relatively close to the \texttt{Correct gene} condition.}
+\texttt{Wrong domain} and \texttt{Wrong algorithm} match the \texttt{Correct gene} condition on both Pro and Flash, while \texttt{Outdated technique} is only slightly stronger on Flash. 
+This suggests that the usefulness of a gene is not reducible to literal correctness alone: some imperfect content still preserves a usable control template.
+
+\nbf{Structure-breaking perturbations are substantially more harmful than content perturbations.}
+By contrast, \texttt{Step-reversed} and especially \texttt{Over-constrained} cause much larger degradation. 
+The main failure mode is therefore not imperfect content itself, but the destruction of a flexible and control-relevant strategy structure. 
+In particular, excessive restriction is consistently more damaging than moderate content mismatch.
+
+\subsubsection{Gene reuse is real but bounded}
+
+We finally examine whether genes support reuse beyond the original task, and if so, under what boundary conditions. This analysis covers a total of $180$ trials, and the results are summarized in~\cref{fig:gene_reuse}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{figures/gene-cross-domain.pdf}
+\caption{Bounded cross-task reuse of strategy genes. Reuse is strongest for the original task, remains helpful within the same domain, becomes unstable for adjacent domains, and turns harmful on the weaker model for unrelated or generic genes.}
+\label{fig:gene_reuse}
+\end{figure}
+
+\nbf{Gene reuse is real, but clearly bounded by task distance.}
+\blue{[UPDATE: EX20 (540 trials) on 45 scenarios shows unusual pattern due to high baseline (Pro 87.7\%). generic(77.5\%) $>$ none(74.3\%) $>$ analogous(72.9\%) $>$ exact(72.1\%) $>$ same\_domain(65.8\%). Old distance-decay pattern not clearly reproduced.]}
+Reuse is strongest for the original task (\blue{was $+8.3$pp on Pro, $+6.7$pp on Flash}), remains clearly helpful within the same domain (\blue{was $+6.0$pp / $+3.3$pp}), and becomes unstable for adjacent domains (\blue{was $+5.0$pp / $-3.3$pp}).
+
+\nbf{The weaker model is much more easily misled by distant or generic genes.}
+\blue{[UPDATE: New data (EX20) does not clearly show this pattern. Flash performance varies but does not degrade strongly with distance. The old conclusion about Flash being ``easily misled'' by distant genes needs re-examination.]}
+The main degradation is concentrated on Flash: unrelated-domain genes reduce it by \blue{N/A (was $-10.0$pp)}, and generic genes by \blue{N/A (was $-6.7$pp)}, even though Pro remains mildly positive in both cases.
+
+\subsection{Evolution Probe: Genes Provide a Better Substrate for Experience-Driven Evolution}
+
+We now ask not only whether genes function as effective control representations, but why they form a better substrate for experience-driven evolution. 
+Across the retained Evolution Probe analyses, the key pattern is not that more text helps, but that evolution becomes effective when a compact gene is augmented with targeted failure knowledge, model-sensitive metacognitive framing, and structured narrative context.
+
+
+\subsubsection{Failure knowledge is a high-value control signal}
+
+We first ask what kind of additional context most reliably supports evolution. 
+To isolate this effect, we examine two retained analyses over a total of $300$ trials: one compares the ordering of failure and strategy signals, and the other varies the density of failure experience. 
+The results are summarized in~\cref{tab:failure_signal}.
+
+\begin{table}[h]
+\centering
+\caption{Failure knowledge as a high-value control signal. (a) Left: ordering effects. (b) Right: failure-density effects. \blue{[UPDATE: New data from EX9 (450 trials) and EX11 (450 trials) on 45 scenarios. Effect sizes smaller.]}}
+\label{tab:failure_signal}
+\begin{minipage}[t]{0.5\textwidth}
+\centering
+\small
+\textbf{(a) Failure ordering}\\[3pt]
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Condition} & \textbf{Pro} & \textbf{Flash} & \textbf{Avg.} \\
+\midrule
+Baseline & \blue{$42.8\%$ (was $60.0\%$)} & \blue{$60.8\%$ (was $33.3\%$)} & \blue{$50.0\%$ (was $46.7\%$)} \\
+Strategy then failure & \blue{$42.7\%$ (was $53.3\%$)} & \blue{$58.2\%$ (was $40.0\%$)} & \blue{$49.2\%$ (was $46.7\%$)} \\
+Correct strategy & \blue{$43.0\%$ (was $53.3\%$)} & \blue{$58.0\%$ (was $46.7\%$)} & \blue{$49.1\%$ (was $50.0\%$)} \\
+\cellcolor{bestRow}Failure warning & \blue{$42.3\%$ (was $53.3\%$)} & \cellcolor{bestRow}\blue{$68.3\%$ (was $53.3\%$)} & \cellcolor{bestRow}\blue{$53.1\%$ (was $53.3\%$)} \\
+\cellcolor{bestRow}Failure then strategy & \blue{$43.4\%$ (was $66.7\%$)} & \blue{$64.7\%$ (was $40.0\%$)} & \cellcolor{bestRow}\blue{$52.3\%$ (was $53.4\%$)} \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\small
+\textbf{(b) Failure density}\\[3pt]
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lccc}
+\toprule
+\textbf{\# failures} & \textbf{Pro} & \textbf{Flash} & \textbf{Avg.} \\
+\midrule
+$0$ (baseline) & \blue{$57.0\%$ (was $60.0\%$)} & \blue{$41.8\%$ (was $33.3\%$)} & \blue{$49.4\%$ (was $46.7\%$)} \\
+\cellcolor{bestRow}$2$ & \blue{$54.1\%$ (was $66.7\%$)} & \blue{$50.8\%$ (was $40.0\%$)} & \cellcolor{bestRow}\blue{$52.4\%$ (was $53.4\%$)} \\
+$3$ & \blue{$53.9\%$ (was $60.0\%$)} & \blue{$46.7\%$ (was $46.7\%$)} & \blue{$50.3\%$ (was $53.4\%$)} \\
+$1$ & \blue{$51.3\%$ (was $80.0\%$)} & \blue{$46.3\%$ (was $33.3\%$)} & \blue{$48.8\%$ (was $56.7\%$)} \\
+$4$ & \blue{$49.4\%$ (was $60.0\%$)} & \blue{$47.5\%$ (was $53.3\%$)} & \blue{$48.4\%$ (was $56.7\%$)} \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{minipage}
+\end{table}
+
+\nbf{Failure-first organization is more effective than strategy-first organization.}
+\blue{[UPDATE: Direction holds but effect sizes much smaller. Failure warning(53.1\%) and failure-then-strategy(52.3\%) still beat baseline(50.0\%), but margins are $\sim$2--3pp instead of $\sim$7pp.]}
+As shown in~\cref{tab:failure_signal}(a), placing failure before strategy reaches \blue{$52.3\%$ (was $53.4\%$)}, above both the baseline at \blue{$50.0\%$ (was $46.7\%$)} and the reversed ordering, which remains at \blue{$49.2\%$ (was baseline)}.
+
+\nbf{A small amount of failure history is often sufficient, but the useful density is model-dependent.}
+\blue{[UPDATE: New data shows 2 failures is best (52.4\%), not 1 or 4. Pro 80\% at 1 failure no longer holds (now 51.3\%). Flash model-dependent pattern changes: Flash improves with failures (41.8\%$\to$50.8\% at 2 failures). ]}
+In~\cref{tab:failure_signal}(b), \blue{two failures are now optimal (52.4\%)}. \blue{One failure no longer lifts Pro dramatically (was $60.0\%$ to $80.0\%$, now $57.0\%$ to $51.3\%$)}.
+
+
+\subsubsection{Metacognitive cues are strongly model-dependent}
+
+We next ask whether evolution-style enhancement works only by injecting more external knowledge, or whether part of its effect comes from changing the model's control state. 
+To study this, we examine three retained analyses over a total of $540$ trials, covering role framing, reflection style, and high-stakes framing. 
+
+\begin{table}[h]
+\centering
+\caption{Role framing as an external metacognitive cue. \blue{[UPDATE: EX10 (540 trials, 45 scenarios). Effects much weaker. Novice still best but only +1.2pp total. Wrong-domain no longer catastrophic for Flash.]}}
+\label{tab:role_framing}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Role} & \textbf{Description} & \textbf{Pro} & \textbf{Flash} \\
+\midrule
+Adjacent-domain expert & ``You are an infrared spectroscopy researcher'' & \blue{$50.3\%$ (was $66.7\%$)} & \blue{$47.0\%$ (was $20.0\%$)} \\
+Wrong-domain expert & ``You are an NLP/ML engineer'' & \blue{$52.9\%$ (was $66.7\%$)} & \blue{$42.6\%$ (was $20.0\%$)} \\
+Baseline & No role & \blue{$55.2\%$ (was $60.0\%$)} & \blue{$44.4\%$ (was $33.3\%$)} \\
+Senior engineer & ``You are a senior engineer with 10 years of experience'' & \blue{$55.2\%$ (was $66.7\%$)} & \blue{$43.9\%$ (was $33.3\%$)} \\
+Exact-domain expert & ``You are a UV-Vis spectroscopy chemist'' & \blue{$50.6\%$ (was $60.0\%$)} & \blue{$47.0\%$ (was $40.0\%$)} \\
+\cellcolor{bestRow}Novice & \cellcolor{bestRow}``You are a careful programming student'' & \cellcolor{bestRow}\blue{$52.6\%$ (was $60.0\%$)} & \cellcolor{bestRow}\blue{$50.9\%$ (was $46.7\%$)} \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+\nbf{Role cues can strongly help or hurt the weaker model even without changing task knowledge.}
+\blue{[UPDATE: Effect much weaker in 45-scenario data. Novice Flash: 50.9\% vs 44.4\% baseline (+6.5pp, was +13.4pp). Wrong-domain Flash: 42.6\% vs 44.4\% (-1.8pp, was -13.3pp collapse to 20\%). Role effects persist but are much more moderate.]}
+As shown in~\cref{tab:role_framing}, the strongest role effects appear on Flash rather than Pro.
+A novice role reaches \blue{$50.9\%$ (was $46.7\%$)}, clearly above the baseline of \blue{$44.4\%$ (was $33.3\%$)}, whereas both adjacent-domain and wrong-domain expert roles \blue{drop to $47.0\%$ and $42.6\%$ (was $20.0\%$ for both)}.
+
+\begin{table}[h]
+\centering
+\caption{Reflection style as an external metacognitive cue. \blue{[UPDATE: EX12 (540 trials, 45 scenarios). Gene G3 is now best (53.3\%). Rubber-duck no longer dominates Pro. External knowledge no longer dominates Flash.]}}
+\label{tab:reflection_style}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Method} & \textbf{Pro} & \textbf{Flash} \\
+\midrule
+Rubber-duck (explain before coding) & \cellcolor{bestRow}\blue{$54.2\%$ (was $73.3\%$)} & \blue{$49.7\%$ (was $26.7\%$)} \\
+Baseline & \blue{$57.7\%$ (was $60.0\%$)} & \blue{$41.8\%$ (was $33.3\%$)} \\
+Self-prediction (predict own errors) & \blue{$51.1\%$ (was $60.0\%$)} & \blue{$46.5\%$ (was $33.3\%$)} \\
+Expert + chain-of-thought & \blue{N/A (was $66.7\%$)} & \blue{N/A (was $36.7\%$)} \\
+External knowledge + chain-of-thought & \blue{N/A (was $66.7\%$)} & \blue{N/A (was $46.7\%$)} \\
+\cellcolor{bestRow}External knowledge & \cellcolor{bestRow}\blue{$55.5\%$ (was $70.0\%$)} & \cellcolor{bestRow}\blue{$46.6\%$ (was $60.0\%$)} \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+\nbf{The same reflection cue can help one model and hurt another.}
+\blue{[UPDATE: This model-dependent pattern weakens substantially. Rubber-duck now helps Flash too (49.7\% vs 41.8\%). The extreme Pro-helps/Flash-hurts split (73.3\%/26.7\%) is no longer observed (now 54.2\%/49.7\%).]}
+The reflection-style comparison in~\cref{tab:reflection_style} makes the model dependence even sharper.
+Rubber-duck framing is strongest on Pro at \blue{$54.2\%$ (was $73.3\%$)}, \blue{and now also helps Flash at $49.7\%$ (was harmful at $26.7\%$, below its $33.3\%$ baseline)}.
+
+\begin{table}[h]
+\centering
+\caption{High-stakes framing as an external metacognitive cue. \blue{[UPDATE: EX16 (540 trials, 45 scenarios). REVERSAL: Low-stakes(52.3\%) now best, High-stakes(50.5\%) mediocre. Competition(51.5\%) no longer harmful for Pro.]}}
+\label{tab:stakes_framing}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Framing} & \textbf{Reported effect} & \textbf{Description} \\
+\midrule
+Competition & \blue{Pro $+2.6$pp (was $-12.7$pp)} & \blue{``You are competing with GPT-5'' --- no longer harmful} \\
+Low-stakes & \blue{$+3.0$pp (was $-2.0$pp)} & \blue{``This is only a prototype'' --- NOW BEST} \\
+Baseline & $+0.0$pp & No additional framing \\
+Difficulty warning & \blue{$+1.7$pp (was $+4.5$pp)} & ``This task is extremely difficult'' \\
+Teaching & \blue{$+2.8$pp (was $+5.0$pp) [labeled ``easy'' in new data]} & ``Students will learn from your code'' \\
+\cellcolor{bestRow}High-stakes & \cellcolor{bestRow}\blue{$+1.2$pp (was $+7.0$pp)} & \cellcolor{bestRow}\blue{No longer best. Was ``The code will be deployed...''} \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+\nbf{\blue{[REVERSAL]} High-stakes framing changes control priorities, whereas PUA-style prompting can be actively harmful.}
+\blue{[UPDATE: Reversed. Low-stakes(+3.0pp) now best, High-stakes(+1.2pp) mediocre. Competition(+2.2pp) is no longer harmful --- Pro actually benefits. All framings have positive effect (main driver is Flash improvement). The ``PUA is harmful'' claim no longer holds.]}
+As shown in~\cref{tab:stakes_framing}, a simple high-stakes cue yields \blue{only $+1.2$pp (was the strongest gain at $+7.0$pp)}. \blue{Low-stakes is now best at $+3.0$pp (was harmful at $-2.0$pp).}
+
+\nbf{Evolution-style enhancement is therefore not reducible to ``more text helps.''}
+Taken together, these results show that external contextual cues can improve or degrade performance without changing the task knowledge itself. 
+Their effect depends strongly on model capability and on the kind of control state they induce. 
+In this sense, many evolution-style prompts act less like added knowledge and more like metacognitive interventions on inference-time behavior.
+
+\subsubsection{Evolution narrative acts as structured contextual enhancement}
+
+Finally, we ask whether evolution narrative helps simply because it adds more text, or because it attaches structured history to an already stable control object. This analysis covers $180$ trials, and the results are summarized in~\cref{tab:evolution_narrative}.
+
+
+\begin{table}[h]
+\centering
+\caption{Evolution narrative as structured contextual enhancement. \blue{[UPDATE: EX26 (450 trials, 45 scenarios). Direction holds but effect sizes much smaller (+2.4pp vs +9.5pp). Pro sample sizes small (14-15/condition).]}}
+\label{tab:evolution_narrative}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Condition} & \textbf{Avg. pass rate} & \textbf{Avg. vs baseline} \\
+\midrule
+Baseline & \blue{$55.2\%$ (was $46.7\%$)} & $+0.0$pp \\
+Gene + confidence metadata & \blue{$57.5\%$ (was $53.2\%$)} & \blue{$+2.3$pp (was $+6.5$pp)} \\
+Gene alone & \blue{N/A --- replaced by Failure attempts only $55.5\%$ (was $53.4\%$)} & \blue{$+0.3$pp (was $+6.7$pp)} \\
+GEP Capsule format & \blue{$56.0\%$ (was $54.5\%$)} & \blue{$+0.8$pp (was $+7.8$pp)} \\
+Failure attempts only & \blue{$55.5\%$ (was $54.7\%$)} & \blue{$+0.3$pp (was $+8.0$pp)} \\
+\cellcolor{bestRow}Gene + failure history & \cellcolor{bestRow}\blue{$57.6\%$ (was $56.2\%$)} & \cellcolor{bestRow}\blue{$+2.4$pp (was $+9.5$pp)} \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+
+\nbf{Evolution narrative strengthens genes beyond the gene alone condition.}
+\blue{[UPDATE: Direction holds but effect much smaller. Gene+failure history: $57.6\%$ ($+2.4$pp, was $+9.5$pp). Baseline is now $55.2\%$ (was $46.7\%$), so the relative improvement is modest.]}
+As shown in~\cref{tab:evolution_narrative}, \texttt{Gene} alone reaches \blue{(see table)} ($+6.7$pp), but adding failure history lifts performance further to \blue{$57.6\%$ ($+2.4$pp) (was $56.2\%$, $+9.5$pp)}.
+
+\nbf{Narrative works as structured contextual enhancement rather than as a replacement object.}
+The strongest condition is not narrative without a gene, but gene plus narrative. 
+This suggests that evolution narrative is best understood not as a new standalone experience object, but as structured context attached to a stable gene substrate.
+
+
+
+\subsection{Gene as a Carrier for Test-Time Evolution}
+\label{sec:gene_tte}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/critpt.pdf}
+\caption{
+Accuracy (\%) on the CritPt benchmark.
+Two gene-evolved systems, \texttt{Evolver (Gene) 2026-02-16} and \texttt{Evolver (Gene) 2026-03-26}, substantially outperform their paired base models, Gemini 3 Pro Preview and Gemini 3.1 Pro Preview, by $+9.47$ and $+9.44$ percentage points, respectively.
+The stronger evolved version reaches $27.14\%$ accuracy, illustrating that gene-based test-time evolution can yield substantial gains beyond the underlying base model.
+}
+\label{fig:critpt_benchmark}
+\end{figure}
+
+We next ask a stronger question than one-shot test-time control: can \emph{Gene} also serve as a carrier for \emph{test-time evolution}, enabling iterative improvement across runs without changing the underlying base model?
+To study this, we construct an evolutionary agent using OpenClaw\footnote{\url{https://github.com/openclaw/openclaw}} as the host runtime and Evolver\footnote{\url{https://github.com/EvoMap/evolver}} as the evolution engine.
+At a high level, Evolver organizes self-evolution around structured Genes, accumulates causal experience through memory, and solidifies successful updates through validation-governed evolution events.
+As shown in~\cref{fig:critpt_benchmark}, both evolved agents substantially outperform their paired base models on CritPt benchmark~\cite{CritPt}: \texttt{Evolver (Gene) 2026-02-16} reaches $18.57\%$ versus $9.1\%$ for Gemini 3 Pro Preview, while \texttt{Evolver (Gene) 2026-03-26} reaches $27.14\%$ versus $17.7\%$ for Gemini 3.1 Pro Preview.
+Detailes are deferred to~\cref{app:critpt_evolution_details}.
+
+\nbf{Version A: \texttt{Evolver (Gene) 2026-02-16}.}
+We view the earlier version as \emph{memory-grounded} evolution: its gains mainly come from consolidating prior failures, execution traces, and corrective experience into reusable control units.
+A representative case is \texttt{gene\_gep\_repair\_from\_errors}, which is triggered by explicit failure signals such as \texttt{error}, \texttt{exception}, \texttt{failed}, and \texttt{unstable}, and follows a tightly constrained repair loop: structured diagnosis, blast-radius estimation, smallest reversible patch, validation, and solidification back into the Gene/Capsule store.
+The key point is that the gene does not merely remind the agent to ``be careful.'' It packages a reusable repair procedure.
+Once distilled, the same pattern can be invoked again in later runs instead of being rediscovered from scratch.
+This is the first sense in which gene iteration is useful: it converts past failures into reusable future-time control.
+
+\nbf{Version B: \texttt{Evolver (Gene) 2026-03-26}.}
+The later version reflects a broader, \emph{exploration-augmented} regime.
+Across $70$ tasks, the system uses $210$ gene slots and $36$ unique gene IDs, with \texttt{arxiv}-derived genes accounting for $148$ selections, compared with $44$ from \texttt{run\_experience} and $18$ from \texttt{builtin\_topic\_prior}. 
+The most revealing case is \texttt{gene\_topic\_hamiltonian\_inverse\_design}, the most frequent high-value run-experience gene in the full run, selected $25$ times.
+Its content is already strongly procedural: enumerate constraints such as commutation, normalization, and operator ordering; construct coefficients under those constraints; decompose many-body-chain problems into local terms while preserving index consistency; and prioritize numerical stability and reproducibility, ideally with symbolic and numerical checking.
+This shows what gene iteration preserves at a later stage: not just memories of failure, but compact task-facing solution procedures.
+Its practical value is visible in repeated high-frequency combinations, especially the recurring trio \texttt{gene\_topic\_hamiltonian\_inverse\_design + gene\_topic\_many\_body\_spin\_chain + gene\_topic\_seed\_many\_body\_spin\_chain}, which appears across 12 tasks.
+This is the second sense in which gene iteration is useful: the system is no longer only repairing itself, but also accumulating directly reusable solution patterns and deploying them repeatedly at scale.
+
+\nbf{Discussion.}
+Taken together, the two versions show that gene-based evolution is not merely becoming deeper, but broader.
+\texttt{Evolver (Gene) 2026-02-16} mainly consolidates failures into stable repair and validation loops, whereas \texttt{Evolver (Gene) 2026-03-26} further converts successful task experience into reusable domain-facing procedures.
+This distinction is central to our overall argument.
+If a reusable experience unit is to support test-time evolution, it must remain compact enough for inference-time injection, structured enough for targeted update, and practical enough to preserve procedures that continue to work in later problems.
+The CritPt results provide concrete evidence for this view: Gene is not only a control-oriented representation for one-shot inference, but also a persistent optimization interface through which reusable experience can accumulate, improve, and become increasingly useful through iteration.
+
+\subsection{Overall Findings}
+
+The retained analyses support six main findings.
+
+\begin{itemize}[leftmargin=1.2em, itemsep=0.25em, topsep=0.2em, parsep=0pt, partopsep=0pt]
+
+    \item \nbf{Documentation-oriented skills are misaligned with test-time control.}
+    Their control value is highly sparse, and expanding a compact skill representation into a fuller documentation package does not reliably help and can even degrade performance.
+
+    \item \nbf{Representation is a first-order factor rather than a packaging detail.}
+    Format, framing, and failure salience substantially alter whether prior experience functions as actionable control or as weak background context.
+    \blue{[UPDATE: Effect sizes much smaller on 45-scenario data. Format differences $<$3pp (was 11pp spread). Framing differences $\sim$4pp (was 17pp spread). But representation still matters.]}
+
+    \item \nbf{Strategy genes are better experience representations, not merely better prompts.}
+    Genes outperform \texttt{Skill-Core} under smaller budgets, and reattaching skill-style components typically weakens rather than strengthens them.
+    \blue{[UPDATE: Gene no longer clearly outperforms Skill. Skill L1(51.0\%) slightly beats Gene G3(49.6\%) in EX2. But Gene's token efficiency (1/5 tokens) is the real advantage. Reattaching examples hurts but API notes helps.]}
+
+    \item \nbf{The key object-level properties of genes are structural robustness and bounded reuse.}
+    Moderate content perturbations can remain usable, whereas structure-breaking perturbations are consistently harmful; reuse is strongest within the same task or domain and weakens with task distance.
+
+    \item \nbf{Genes provide a better substrate for experience-driven evolution.}
+    Failure history, model-sensitive metacognitive cues, and evolution narrative become most effective when attached to a stable gene rather than appended as diffuse free-form context.
+
+    \item \nbf{Gene iteration scales from corrective routines to complex reusable strategies.}
+    Early iterations mainly distill failures into repair and validation loops, while later iterations can preserve increasingly structured, task-facing procedures, showing that gene-based test-time evolution can accumulate more complex strategic knowledge over time.
+
+\end{itemize}
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+\blue{[UPDATE conclusion: All trial counts need updating (13,329 not 3,060). Effect sizes are smaller. Key reversals: (1) XML no longer best format, (2) WARNING no longer best framing, (3) Gene alone no longer beats Skill in all comparisons, (4) High-stakes no longer best metacognitive cue. Core argument (Gene is more token-efficient, information overload is harmful, representation matters) still holds.]}
+
+This paper asks a representation question that is often overlooked in experience reuse: not how to provide more prior experience at test time, but how to represent reusable experience so that it remains actionable under inference constraints.
+Through controlled experiments, we show that documentation-oriented skills are poorly aligned with test-time control, and that their useful signal is highly sparse.
+In contrast, strategy genes provide a more effective experience substrate: they are more compact, more structurally robust, and more reliably reusable across settings.
+
+Beyond one-shot control, we further show that genes support test-time evolution.
+When reusable experience is attached to a stable gene rather than appended as diffuse free-form context, iterative refinement becomes more reliable and more useful.
+Across two evolutionary runs, genes not only preserve corrective routines derived from failures, but also progressively accumulate more structured, task-facing procedures.
+This suggests that genes are not merely better prompts, but a more suitable interface for experience accumulation, controlled reuse, and iterative improvement.
+
+More broadly, our results suggest that experience reuse in LLM-based systems should be studied at the level of representation design rather than prompt packaging alone.
+We hope this work motivates further research on structured experience objects, bounded reuse, and evolution-oriented representations for test-time adaptation.
+
+{
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+}
+
+\clearpage
+\appendix
+\section*{Appendix}
+
+\section{Gene Evolution Protocol (GEP)}
+\label{app:gep}
+
+\input{tables/gep-table}
+
+We provide a formalization of the Gene Evolution Protocol (GEP) used in this work. 
+As shown in~\cref{tab:gep_schema}, consistent with the public GEP description, we treat the protocol as an object layer for reusable experience rather than as a mere prompt format or logging convention. 
+At a high level, GEP organizes experience into three object types---\emph{genes}, \emph{capsules}, and \emph{events}---and updates them through a trial--validation--solidification loop. 
+In the Gene-Bench setting used in this paper, the gene layer is the primary object of study, while capsules and events define the audit and evolution interfaces around it.
+
+\subsection{Protocol Scope and Design Philosophy}
+\label{app:gep_scope}
+
+GEP is designed to support three requirements that free-form prompt fragments do not satisfy reliably. 
+First, reusable experience should have stable boundaries and a canonical internal structure, so that it can be analyzed and reused as an explicit object rather than as unstructured text. 
+Second, experience objects should be comparable and operable: they should admit matching, replacement, revision, composition, and validation. 
+Third, experience should remain evolvable over time, meaning that successful adaptations can be accumulated, inherited, corrected, and audited rather than merely replayed as one-off prompt patches.
+
+Under this view, GEP is not introduced to make prompting more elaborate. 
+It is introduced to make reusable experience \emph{object-like}: explicit, structured, and protocolized enough to support lifecycle management at test time and across repeated task episodes.
+
+\subsection{Object Hierarchy}
+\label{app:gep_objects}
+
+GEP defines three object layers:
+\begin{equation}
+\mathcal{O} = \mathcal{G} \cup \mathcal{C} \cup \mathcal{E},
+\end{equation}
+where $\mathcal{G}$ denotes the set of genes, $\mathcal{C}$ the set of capsules, and $\mathcal{E}$ the set of events.
+
+\nbf{Genes.}
+A \emph{gene} is the atomic capability unit. 
+It is the smallest reusable experience representation that can directly function as test-time control. 
+In this paper, genes are compact strategy templates distilled from richer experience sources such as procedural skills or prior trajectories.
+
+\nbf{Capsules.}
+A \emph{capsule} is a validated task-level execution path with audit trail. 
+Whereas a gene encodes an abstract reusable strategy, a capsule records how one or more genes are instantiated and validated in a concrete task-solving episode. 
+Capsules therefore operate at a higher granularity than genes: they capture successful compositions, execution context, and validation outcomes.
+
+\nbf{Events.}
+An \emph{event} is an immutable evolution log. 
+Events record protocol-relevant state transitions, such as mutation, repair, validation failure, validation success, or solidification. 
+Their role is not to serve as direct control input, but to preserve provenance, lineage, and auditability of experience evolution.
+
+This hierarchy induces the following functional distinction:
+\begin{itemize}
+    \item \textbf{gene}: control unit
+    \item \textbf{capsule}: validated execution unit
+    \item \textbf{event}: evolution record
+\end{itemize}
+
+\subsection{Gene Objects}
+\label{app:gep_gene}
+
+A gene is a compact, control-oriented representation distilled from prior experience:
+\begin{equation}
+g=\psi(z), \qquad z \in \{s,\mathcal{H},\mathcal{C}\}, \quad g\in\mathcal{G},
+\end{equation}
+where $z$ may be a procedural skill $s$, a set of trajectories $\mathcal{H}$, or a previously validated capsule $\mathcal{C}$.
+
+For the purposes of this paper, we formalize a gene as
+\begin{equation}
+g=(m,u,\pi,\alpha,c,v,\eta),
+\end{equation}
+where
+\begin{itemize}
+    \item $m$ denotes task-matching signals (e.g., keywords or trigger cues),
+    \item $u$ denotes a compact summary of the intended behavior,
+    \item $\pi$ denotes a small set of strategic steps,
+    \item $\alpha$ denotes failure-aware \texttt{AVOID} cues,
+    \item $c$ denotes optional execution constraints,
+    \item $v$ denotes validation hooks or executable checks,
+    \item $\eta$ denotes canonical metadata such as type, version, identifier, and hash.
+\end{itemize}
+
+This abstraction matches the operational schema used in our Gene-Bench setup, where a gene is serialized with fields such as \texttt{type}, \texttt{schema\_version}, \texttt{id}, \texttt{signals\_match}, \texttt{summary}, \texttt{strategy}, \texttt{constraints}, \texttt{validation}, and \texttt{asset\_id}. 
+A representative example is a \texttt{<strategy-gene>} block containing domain keywords, a one-sentence summary, a short strategy list, and one or more \texttt{AVOID} items. 
+In our experiments, such genes are typically around $120$ tokens and are designed to provide control-relevant experience under limited inference budget.
+
+\subsection{Capsule Objects}
+\label{app:gep_capsule}
+
+A capsule records a validated task-solving path that can serve as a higher-level reusable asset. 
+Unlike a gene, which abstracts a compact control strategy, a capsule preserves the successful realization of a strategy in context. 
+For clarity, we formalize a capsule in this paper as
+\begin{equation}
+\kappa = (q, G_{\kappa}, T_{\kappa}, o_{\kappa}, V_{\kappa}, \ell_{\kappa}),
+\qquad \kappa \in \mathcal{C},
+\end{equation}
+where
+\begin{itemize}
+    \item $q$ is a task signature or problem context,
+    \item $G_{\kappa}\subseteq \mathcal{G}$ is the set of genes used or instantiated,
+    \item $T_{\kappa}$ is the execution trace or action path,
+    \item $o_{\kappa}$ is the observed outcome,
+    \item $V_{\kappa}$ is the validation record or audit trail,
+    \item $\ell_{\kappa}$ is the lineage pointer linking the capsule to prior events or parent assets.
+\end{itemize}
+
+This paper-side formalization is consistent with the public GEP description, in which capsules correspond to successful task execution paths and serve as validated assets above the gene layer. 
+Conceptually, a capsule answers the question: \emph{How was a control strategy actually realized and validated in a concrete task episode?}
+
+\subsection{Event Objects}
+\label{app:gep_event}
+
+Events are immutable records of protocol-relevant changes. 
+They preserve provenance and make evolution auditable. 
+We formalize an event as
+\begin{equation}
+e=(t,\rho,a_{\mathrm{src}},a_{\mathrm{dst}},\sigma,\iota,\Delta,\nu,\tau),
+\qquad e\in\mathcal{E},
+\end{equation}
+where
+\begin{itemize}
+    \item $t$ is an event type (e.g., \texttt{repair}, \texttt{innovation}, \texttt{validation\_pass}, \texttt{validation\_fail}, \texttt{solidify}),
+    \item $\rho$ is the parent run or episode identifier,
+    \item $a_{\mathrm{src}}$ and $a_{\mathrm{dst}}$ denote source and target assets,
+    \item $\sigma$ is the triggering signal,
+    \item $\iota$ is the intended mutation or repair objective,
+    \item $\Delta$ is the proposed change or diff,
+    \item $\nu$ is the validation result,
+    \item $\tau$ is the timestamp or ordering key.
+\end{itemize}
+
+This formalization instantiates the GEP view that events are immutable evolution logs recording each mutation or repair with associated context. 
+Events are therefore not direct control representations; they are the protocol substrate for traceability, auditability, and lineage reconstruction.
+
+\subsection{The GEP Loop}
+\label{app:gep_loop}
+
+The protocol updates experience objects through a six-stage loop:
+\begin{equation}
+(\mathcal{G},\mathcal{C},\mathcal{E}) 
+\xrightarrow{\textsc{scan}} \sigma
+\xrightarrow{\textsc{signal}} \hat{\sigma}
+\xrightarrow{\textsc{intent}} \iota
+\xrightarrow{\textsc{mutate}} a'
+\xrightarrow{\textsc{validate}} \nu
+\xrightarrow{\textsc{solidify}} (\mathcal{G}',\mathcal{C}',\mathcal{E}'),
+\end{equation}
+where $a'$ denotes a candidate asset, typically a new or revised gene (and optionally an associated capsule), and $\nu$ is the validation outcome.
+
+\nbf{Scan.}
+Runtime traces, tool logs, execution failures, or stagnation signals are monitored.
+
+\nbf{Signal.}
+Raw traces are converted into standardized protocol signals. 
+This step turns unstructured execution evidence into machine-actionable mutation or repair triggers.
+
+\nbf{Intent.}
+The protocol determines the objective of evolution, such as repair, optimization, or extension.
+
+\nbf{Mutate.}
+A candidate asset is generated by rewriting code, prompt structure, strategy steps, \texttt{AVOID} cues, or associated metadata.
+
+\nbf{Validate.}
+The candidate is executed in a sandbox or otherwise checked against validation hooks. 
+Only assets that satisfy the required criteria are eligible for persistence.
+
+\nbf{Solidify.}
+Validated capability is written back into the protocolized repository as a new or revised gene, and the corresponding capsule and event records are updated.
+
+This loop is the protocol-level analogue of trial--validation--solidification. 
+Its function is not merely to repair a single run, but to convert transient runtime adaptation into persistent reusable experience.
+
+\subsection{Canonicalization and Protocol Invariants}
+\label{app:gep_invariants}
+
+For protocolization to be meaningful, experience objects must satisfy several invariants.
+
+\nbf{Stable boundaries.}
+A gene must have explicit fields and canonical serialization, so that it can be identified as an object rather than treated as free-form text.
+
+\nbf{Control-oriented structure.}
+A gene must encode compact control-relevant content, rather than documentation-heavy explanation. 
+In our setting, this typically takes the form of matching signals, summary, strategy, and \texttt{AVOID} cues.
+
+\nbf{Operability.}
+Protocolized genes must support matching, replacement, revision, and composition.
+
+\nbf{Validatability.}
+A gene or capsule must expose executable or otherwise explicit validation interfaces.
+
+\nbf{Lineage and auditability.}
+Capsules and events must preserve enough provenance information to reconstruct how an experience object was produced, validated, and modified.
+
+These invariants explain why GEP should be viewed as a protocol layer rather than a formatting convention. 
+Canonicalization is what turns a useful prompt fragment into an analyzable, composable, and evolvable experience object.
+
+\section{Detailed Experimental Setup}
+\label{app:exp_setup}
+
+Our goal is to document the evaluation protocol, inference configuration, benchmark scope, experience objects, and experiment matrix in a compact paper-facing form. 
+All results are obtained under deterministic decoding, a shared control interface, and execution-based evaluation, so that differences across conditions can be attributed to experience representation rather than to changes in model parameters or generation settings.
+
+\subsection{Evaluation Protocol and Metrics}
+\label{app:eval_metric}
+
+Each trial follows the same execution-based pipeline. 
+Given a task description and an optional control prompt, the model generates a Python program, the program is executed in a sandbox, and a predefined unit test suite is applied. 
+A trial is counted as \textsc{Pass} only if all predefined test cases succeed; otherwise it is counted as \textsc{Fail}. 
+Each execution is subject to a timeout of $120$ seconds.
+
+\begin{table}[t]
+\centering
+\caption{Evaluation protocol and primary metrics.}
+\label{tab:eval_protocol}
+\begin{adjustbox}{max width=\columnwidth}
+\begin{tabular}{ll}
+\toprule
+\textbf{Item} & \textbf{Definition} \\
+\midrule
+Unit of evaluation & One task--model--condition trial \\
+Generated output & Executable Python program \\
+Execution environment & Sandbox execution \\
+Timeout & 120 seconds per trial \\
+Success criterion & All predefined unit tests pass \\
+Primary metric & Pass rate \\
+Relative metric & Improvement over baseline in pp \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+Formally, for task input $x_i$ and generated program $y_i$, we define
+\begin{equation}
+\mathrm{Eval}(x_i,y_i)\in\{\textsc{Pass},\textsc{Fail}\}.
+\end{equation}
+For a condition with $N$ trials, pass rate is
+\begin{equation}
+\mathrm{PassRate}=\frac{1}{N}\sum_{i=1}^{N}\mathbf{1}\!\left[\mathrm{Eval}(x_i,y_i)=\textsc{Pass}\right].
+\end{equation}
+We report improvement relative to the no-guidance baseline in percentage points:
+\begin{equation}
+\Delta_{\mathrm{pp}}=\mathrm{PassRate}_{\mathrm{cond}}-\mathrm{PassRate}_{\mathrm{base}}.
+\end{equation}
+This metric is intentionally strict: partial correctness does not count as success, and all reported gains are absolute pass-rate differences rather than relative percentage increases. 
+\cref{tab:eval_protocol} summarizes the evaluation protocol and the primary metrics used throughout the paper.
+For brevity, later tables use the following notation:
+\begin{itemize}[leftmargin=1.2em, itemsep=0.15em, topsep=0.2em, parsep=0pt, partopsep=0pt]
+    \item \textbf{Pro} / \textbf{Flash}: Gemini 3.1 Pro / Gemini 3.1 Flash Lite.
+    \item \textbf{Avg.}: arithmetic mean across the two models.
+    \item \textbf{Avg.\ pass rate}: corresponding mean pass rate.
+    \item \textbf{Avg.\ vs baseline} ($\Delta_{\mathrm{pp}}$): difference from the no-guidance baseline, in percentage points (pp).
+\end{itemize}
+
+\begin{table}[t]
+\centering
+\caption{Model and inference configuration.}
+\label{tab:model_config}
+\begin{adjustbox}{max width=\columnwidth}
+\begin{tabular}{ll}
+\toprule
+\textbf{Configuration} & \textbf{Value} \\
+\midrule
+Strong model & Gemini 3.1 Pro Preview \\
+Weak model & Gemini 3.1 Flash Lite Preview \\
+API & Google AI Studio REST API \\
+Decoding temperature & 0.0 \\
+Max output tokens & \blue{16384 (was 8192)} \\
+Control injection & \texttt{systemInstruction} \\
+Task input field & \texttt{contents} \\
+Execution timeout & 120 seconds \\
+Parallel workers & \blue{1 (was 8)} \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+\subsection{Model and Inference Configuration}
+\label{app:model_config}
+
+\cref{tab:model_config} summarizes the fixed model and inference configuration shared across all experimental conditions.
+All experiments use two fixed Gemini models: Gemini 3.1 Pro Preview and Gemini 3.1 Flash Lite Preview. 
+Control prompts are injected through the \texttt{systemInstruction} field, while the task description is supplied separately through the user-facing \texttt{contents} field. 
+
+
+
+\subsection{Benchmark Scope}
+\label{app:benchmark_scope}
+
+\cref{tab:scenario_scope} summarizes the scope of the analyses retained in this paper.
+The current study includes \blue{$13,329$ (was $3,060$)} trials in total, covering \blue{$45$ (was $42$)} scenarios from \blue{$15+$ (was $32$)} domains.
+Representative scenarios include \texttt{protein\_parse}, \texttt{uv\_spectroscopy}, \texttt{particle\_physics}, \texttt{exoplanet\_transit}, \texttt{noise\_reduction}, \texttt{climate\_attribution}, \texttt{community\_detection}, and \texttt{inventory\_reorder}.
+
+\begin{table}[t]
+\centering
+\caption{Benchmark scope and scenario collection.}
+\label{tab:scenario_scope}
+\begin{adjustbox}{max width=\columnwidth}
+\begin{tabular}{ll}
+\toprule
+\textbf{Item} & \textbf{Value} \\
+\midrule
+Total trials & \blue{13,329 (was 3,060)} \\
+Scenarios covered & \blue{45 (was 42)} \\
+Domains covered & \blue{15+ (was 32)} \\
+Diagnostic subset & 15 gene-sensitive scenarios \\
+Baseline pass rate (Pro) & \blue{varies by experiment (was fixed 60.0\%)} \\
+Baseline pass rate (Flash) & \blue{varies by experiment (was fixed 33.3\%)} \\
+Baseline pass rate (overall) & \blue{varies by experiment (was fixed 46.7\%)} \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+\subsection{Experience Objects and Injection Interface}
+\label{app:objects_interface}
+
+The experiments compare three main experience forms: \texttt{Skill-Full}, \texttt{Skill-Core}, \texttt{Gene}. 
+\texttt{Skill-Full} denotes the full skill package, including the main skill document together with auxiliary notes, examples, and scripts. 
+\texttt{Skill-Core} denotes the main skill document alone. 
+\texttt{Gene} is a distilled strategy template. 
+Their approximate lengths are 600, 300, and 120 tokens, respectively.
+
+Genes are serialized under the GEP schema with fields such as \texttt{type}, \texttt{schema\_version}, \texttt{id}, \texttt{signals\_match}, \texttt{summary}, \texttt{strategy}, \texttt{constraints}, \texttt{validation}, and \texttt{asset\_id}. 
+
+\subsection{Experiment Matrix}
+\label{app:exp_matrix}
+
+The retained analyses in this paper are organized into three groups.
+The first, \emph{Skill Probe}, examines why procedural skills often fail to provide stable and effective test-time control.
+The second, \emph{Gene Probe}, studies whether strategy genes constitute a distinct and more effective experience representation under controlled comparisons.
+The third, \emph{Evolution Probe}, investigates which properties make strategy genes suitable as the substrate for experience-driven evolution, including failure ordering, metacognitive framing, and evolution narrative.
+Across all retained analyses, the paper reports \blue{$13,329$ (was $3,060$)} controlled trials in total.
+The high-level experiment matrix is summarized in~\cref{tab:exp_matrix}.
+
+\begin{table}[h]
+\centering
+\caption{High-level analysis groups.}
+\label{tab:exp_matrix}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{p{3.0cm} p{10.2cm} r}
+\toprule
+\textbf{Group} & \textbf{Core questions} & \textbf{Trials} \\
+\midrule
+Skill Probe
+& Why do procedural skills often fail as test-time control representations? We examine component utility, token budget, formatting, framing, and failure-aware guidance.
+& \blue{UPDATE trials} \\
+
+Gene Probe
+& Do strategy genes function as a distinct and more effective experience representation? We examine direct comparison against skill-style guidance, robustness to perturbation, authorship independence, and limited cross-task reuse.
+& \blue{UPDATE trials} \\
+
+Evolution Probe
+& What properties make strategy genes suitable for experience-driven evolution? We examine failure ordering and density, metacognitive framing, and evolution narrative as structured context around genes.
+& \blue{UPDATE trials} \\
+\midrule
+\multicolumn{2}{r}{\textbf{Total}} & \blue{\textbf{13,329} (was 3,060)} \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+\subsection{Prompt Templates}
+\label{app:prompt_templates}
+
+We provide the concrete prompt templates as follows. 
+
+\nbf{Strategy Gene:}
+\begin{verbatim}
+You are given the following strategic gene to guide your approach.
+The gene describes a high-level strategy — use it as directional guidance,
+not as implementation instructions.
+
+<strategy-gene>
+Domain keywords: {keywords}
+Summary: {summary}
+Strategy:
+  1. {step_1}
+  2. {step_2}
+  3. AVOID: {pitfall}
+</strategy-gene>
+\end{verbatim}
+
+\nbf{High-stakes framing:}
+\begin{verbatim}
+This code will be deployed to production and affects millions of users.
+Ensure correctness, handle edge cases, and validate all assumptions.
+\end{verbatim}
+
+\nbf{Evolution narrative:}
+\begin{verbatim}
+<evolution-event intent="optimize" mutations_tried="4" outcome="success">
+  <history>
+    Attempt 1: [failure_1] -> FAILED
+    Attempt 2: [failure_2] -> FAILED
+    Attempt 3: [failure_3] -> FAILED
+    Attempt 4: Applied learned strategy -> PASSED
+  </history>
+  <validated-gene>
+    [gene_content]
+  </validated-gene>
+</evolution-event>
+\end{verbatim}
+
+\nbf{Injection interface.}
+The control prompts are injected through the \texttt{systemInstruction} field, while the task description is supplied through the user-facing \texttt{contents} field. 
+A representative payload is:
+
+\begin{verbatim}
+payload = {
+    "systemInstruction": {"parts": [{"text": control_prompt}]},
+    "contents": [{"role": "user", "parts": [{"text": task_description}]}],
+    "generationConfig": {"temperature": 0.0, "maxOutputTokens": 16384}  % BLUE: was 8192
+}
+\end{verbatim}
+
+\section{Supplementary Gene Probe Analyses}
+\label{app:gene_supplementary}
+
+This appendix provides two supplementary analyses for the Gene Probe.
+First, we report an authorship-invariance comparison, which is useful but not central to the main-text argument because the evaluated authors are all relatively strong.
+Second, we provide representative cases for cross-task reuse, illustrating how the aggregate reuse trends in the main text map onto concrete task pairs.
+
+\subsection{Authorship invariance across strong authors}
+\label{app:gene_authors}
+
+\begin{table}[h]
+\centering
+\caption{Authorship invariance of gene representations across strong authors. \blue{[UPDATE: EX6 (386 trials, 45 scenarios). No longer fully invariant. Haiku/Human=46.6\% $>$ Opus=46.1\% $>$ GPT-5.4=45.7\% $>$ Gemini=43.7\% $>$ none=40.6\%. Small differences ($<$3pp) but Gemini self-writing is weakest.]}}
+\label{tab:gene_authors}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Author} & \textbf{Pro / Flash} & \textbf{Avg. pass rate} & \textbf{Avg. vs baseline} \\
+\midrule
+Human expert & \blue{$49.6\%$ / $43.3\%$ (was $70.0\%$ / $40.0\%$)} & \blue{$46.6\%$ (was $55.0\%$)} & \blue{$+6.0$pp (was $-10.0$pp)} \\
+Claude Opus & \blue{$48.9\%$ / $43.0\%$ (was $70.0\%$ / $40.0\%$)} & \blue{$46.1\%$ (was $55.0\%$)} & \blue{$+5.5$pp (was $-10.0$pp)} \\
+Claude Haiku & \blue{$49.6\%$ / $43.3\%$ (was $70.0\%$ / $40.0\%$)} & \blue{$46.6\%$ (was $55.0\%$)} & \blue{$+6.0$pp (was $-10.0$pp)} \\
+GPT-5.4 & \blue{$48.1\%$ / $43.3\%$ (was $70.0\%$ / $40.0\%$)} & \blue{$45.7\%$ (was $55.0\%$)} & \blue{$+5.1$pp (was $-10.0$pp)} \\
+Gemini Pro & \blue{$44.0\%$ / $43.3\%$ (was $70.0\%$ / $40.0\%$)} & \blue{$43.7\%$ (was $55.0\%$)} & \blue{$+3.1$pp (was $-10.0$pp)} \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+
+As shown in~\cref{tab:gene_authors}, we additionally examined whether gene performance varies across authors.
+This analysis covers a total of $120$ trials, the main empirical pattern is invariance across authors.
+The absolute level on this subset is not the main point.
+This suggests that, within a pool of strong authors, the stability of a gene depends more on representational form than on individual writing style.
+At the same time, because weaker authors are not included in this comparison, this result should be treated as supportive rather than definitive evidence for authorship invariance.
+
+
+\subsection{Representative cases for cross-task reuse}
+\label{app:gene_reuse_cases}
+
+As shown in~\cref{tab:gene_reuse_cases}, to complement the aggregate reuse results in the main text, we provide several representative cases.
+All cases are chosen to make the task-distance structure: exact-task reuse, same-domain reuse, adjacent-domain reuse, unrelated-domain reuse, and generic reuse.
+These cases clarify what the aggregate reuse conditions mean operationally.
+The strongest gains arise from exact-task and same-domain reuse, where task structure is preserved most directly.
+Adjacent-domain reuse remains plausible when the underlying control template is still structurally similar, even if domain semantics differ.
+By contrast, unrelated-domain and generic reuse expose the boundary of transfer: once either structure or semantics drift too far, the weaker model becomes much more likely to be misled.
+For clarity, the unrelated-domain example above is intended as a representative pair.
+Its role is to concretize what ``unrelated-domain'' means in practice.
+
+\begin{table*}[t]
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.15}
+\caption{Representative cases for cross-task reuse of strategy genes.}
+\label{tab:gene_reuse_cases}
+\begin{tabularx}{\textwidth}{p{2.0cm} p{5.0cm} p{1.8cm} X}
+\toprule
+\textbf{Case} & \textbf{Task pair} & \textbf{Condition} & \textbf{Interpretation} \\
+\midrule
+
+Baseline
+& \makecell[l]{Target: \texttt{S012\_uv\_spectroscopy} \\ Injected: None}
+& baseline
+& No external gene is injected. The model must solve the UV spectroscopy task directly from the problem statement, making this the cleanest control case. \\
+
+Own gene
+& \makecell[l]{Target: \texttt{S012\_uv\_spectroscopy} \\ Injected: \texttt{S012\_uv\_spectroscopy}}
+& own
+& Exact-task reuse. The target task uses its own distilled gene and therefore serves as the upper-bound reference for reuse. \\
+
+Same-domain gene
+& \makecell[l]{Target: \texttt{S012\_uv\_spectroscopy} \\ Injected: \texttt{S108\_raman\_spectroscopy}}
+& same-domain
+& Same-domain reuse. Both tasks belong to spectroscopy and share a highly similar solution structure, although the observed signals differ. \\
+
+Adjacent-domain gene
+& \makecell[l]{Target: \texttt{S012\_uv\_spectroscopy} \\ Injected: \texttt{S026\_earthquake\_catalog}}
+& adjacent
+& Cross-domain but structurally analogous reuse. Both tasks require detecting salient peaks or events against noisy background signals, making this a representative adjacent-domain transfer. \\
+
+Unrelated-domain gene
+& \makecell[l]{Target: \texttt{S033\_exoplanet\_transit} \\ Injected: \texttt{S111\_cuda\_memory}}
+& unrelated
+& Unrelated-domain reuse. The source and target share neither domain semantics nor obvious task structure; any residual benefit would likely come only from very coarse control priors rather than task-specific knowledge. \\
+
+Generic gene
+& \makecell[l]{Target: \texttt{S012\_uv\_spectroscopy} \\ Injected: domain-agnostic meta-gene}
+& generic
+& Generic reuse without domain knowledge. The injected gene contains only abstract control advice, such as checking edge cases or validating input/output structure. \\
+
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+\section{Additional Details on Gene-Driven Test-Time Evolution}
+\label{app:critpt_evolution_details}
+
+We designed two evolution tasks on top of OpenClaw\footnote{\url{https://github.com/openclaw/openclaw}} and Evolver\footnote{\url{https://github.com/EvoMap/evolver}}, and let the resulting evolutionary agent run for approximately two days in each version.
+The two tasks were intentionally different.
+The first task targeted \emph{memory-grounded} self-improvement: the goal was to stabilize execution by repeatedly converting observed failures into reusable repair and protocol assets.
+The second task targeted \emph{exploration-augmented} self-improvement: the goal was to expand the usable gene pool by combining prior run experience with externally sourced genes and topic-facing heuristics.
+This setting matches Evolver's public framing of \emph{Exploration mode} as moving beyond single-loop self-repair toward proactive acquisition of new genes.
+
+\subsection{Evolution Task Design for \texttt{Evolver (Gene) 2026-02-16}}
+\label{app:first_run_design}
+
+\nbf{Task objective.}
+For \texttt{Evolver (Gene) 2026-02-16}, we designed an evolution task centered on \emph{stabilization through memory}.
+The agent was not asked to broadly search for new capabilities.
+Instead, it was asked to improve by looking inward: inspect prior logs, identify recurring execution failures and bottlenecks, and distill those observations into reusable genes.
+The core hypothesis was that a useful evolution carrier should first be able to preserve and replay corrective experience, rather than merely produce one-off fixes.
+
+\nbf{Evolution mechanism.}
+Within this setting, Evolver acts as a structured evolution engine rather than a free-form prompting layer.
+It selects or updates genes based on runtime signals, constrains candidate modifications through explicit strategy fields, and requires validation before successful experience is solidified.
+As a result, the evolved agent does not simply ``remember more'' in a loose sense.
+Instead, it gradually accumulates compact procedures that can be reinvoked in later runs.
+
+\nbf{Why this version is memory-grounded.}
+The first version is memory-grounded because the dominant improvement signal comes from prior failures and internal traces.
+The agent evolves by repeatedly compressing observed breakdowns into reusable defensive procedures.
+This makes the resulting gains structurally conservative but highly practical: the system becomes more stable not by adding broad new knowledge, but by turning past errors into future-time control.
+
+\subsection{Expanded Cases for \texttt{Evolver (Gene) 2026-02-16}}
+\label{app:first_run_cases}
+
+\nbf{Case A1: \texttt{gene\_gep\_repair\_from\_errors}.}
+This gene is the clearest example of how the first version turns failure memory into reusable control.
+It is triggered by explicit error-related signals such as \texttt{error}, \texttt{exception}, \texttt{failed}, and \texttt{unstable}.
+Its strategy is procedural rather than rhetorical:
+(1) extract structured signals from logs and instructions;
+(2) select an existing matching Gene instead of improvising;
+(3) estimate blast radius before editing;
+(4) apply the smallest reversible patch;
+(5) validate the result; and
+(6) solidify the successful pattern back into the Gene/Capsule store.
+This is important because the gene does not merely advise the agent to ``debug carefully.''
+It stores a reusable repair loop:
+\emph{structured diagnosis $\rightarrow$ constrained patching $\rightarrow$ validation $\rightarrow$ solidification}.
+Once this loop is encoded as a gene, later runs can invoke it directly rather than rediscovering it from scratch.
+
+\nbf{Case A2: \texttt{gene\_gep\_innovate\_from\_opportunity}.}
+A complementary case is \texttt{gene\_gep\_innovate\_from\_opportunity}, which shows that the first version does not only repair failures, but also internalizes useful opportunity signals.
+This gene is matched to signals such as \texttt{user\_feature\_request}, \texttt{user\_improvement\_suggestion}, \texttt{perf\_bottleneck}, \texttt{capability\_gap}, and \texttt{stable\_success\_plateau}.
+Its strategy is again strongly procedural:
+extract opportunity signals, search existing Genes and Capsules to avoid reinvention, design a minimal and testable implementation plan, estimate blast radius, validate the change, and finally solidify the new pattern as a Gene or Capsule if it proves useful.
+Compared with the repair gene above, this gene is less reactive and more forward-looking.
+However, it still remains memory-grounded in the sense that it derives new structure from accumulated runtime observations rather than from broad external exploration.
+Together, Cases A1 and A2 show why gene iteration is already useful in the first version:
+it preserves both defensive repair routines and internally discovered improvement routines as reusable evolution assets.
+
+\subsection{Evolution Task Design for \texttt{Evolver (Gene) 2026-03-26}}
+\label{app:second_run_design}
+
+\nbf{Task objective.}
+For \texttt{Evolver (Gene) 2026-03-26}, we designed the evolution task in the spirit of Evolver's \emph{Exploration mode}.
+The goal was no longer only to consolidate existing repair knowledge, but to broaden the evolution substrate by acquiring and routing new task-relevant genes.
+Concretely, this meant combining previously accumulated run experience with externally sourced genes, especially paper-derived and topic-facing assets, so that the agent could learn not only from past failures but also from possible future solution patterns.
+The generated answers are publicly available at~\url{https://github.com/EvoMap/critpt-openclaw-reproducible-70}.
+
+\nbf{Exploration-oriented mechanism.}
+This version still keeps the base model fixed.
+The change happens at the experience layer.
+The agent is allowed to expand beyond the internal repair loop by selecting from a larger gene pool and routing different genes to different tasks.
+In this sense, the second task is not merely a larger version of the first.
+It reflects a different evolutionary regime: instead of asking how to make the current agent more stable within known behaviors, it asks how to enlarge the set of reusable procedures available to the agent.
+
+\nbf{Full-run statistics.}
+The resulting run covers $70$ tasks with $210$ gene slots and $36$ unique gene IDs.
+The source distribution is highly asymmetric:
+\texttt{arxiv}-derived genes account for $148$ selections, compared with $44$ from \texttt{run\_experience} and $18$ from \texttt{builtin\_topic\_prior}.
+This shows that the second version is not simply replaying a small internal memory store.
+It is operating with a broadened experience substrate in which external knowledge plays a major role.
+
+\subsection{Expanded Cases for \texttt{Evolver (Gene) 2026-03-26}}
+\label{app:second_run_cases}
+
+\nbf{Case B1: \texttt{gene\_topic\_hamiltonian\_inverse\_design}.}
+This is the most important high-frequency run-experience gene in the second version, selected $25$ times in the full run.
+Its stored content is already highly task-facing.
+It instructs the agent to:
+(1) enumerate constraints such as commutation, normalization, and operator ordering;
+(2) construct coefficients under those constraints;
+(3) decompose many-body-chain problems into local terms while preserving index consistency; and
+(4) prioritize numerical stability and reproducibility, ideally with both symbolic and numerical checking.
+This is a strong example of useful iteration because the gene no longer stores a vague memory of past difficulty.
+It stores a directly reusable solution procedure.
+The second version therefore shows that evolution can preserve more than repair logic:
+it can also preserve compact domain-facing heuristics that remain useful across many later tasks.
+
+\nbf{Case B2: \texttt{gene\_arxiv\_ebe24f551e12}.}
+A second representative case is \texttt{gene\_arxiv\_ebe24f551e12}, one of the most frequent paper-derived genes in the full run, selected $14$ times.
+Its content is not phrased as a benchmark-specific trick, but as imported structural guidance:
+use data-driven best-response maps to simplify dynamic optimization structure, validate the resulting decomposition with large-scale Monte Carlo analysis, and preserve consistency with equilibrium-style solution structure under standard assumptions.
+The point of this case is not that the benchmark literally requires dynamic games.
+Rather, it shows how Exploration-mode evolution can import a reusable structural pattern from external literature and repurpose it as a task-facing gene.
+Compared with the memory-grounded first version, this is a broader form of iteration:
+the agent is not only replaying successful internal procedures, but also learning new abstractions from outside its own prior trajectory.
+
+\nbf{Repeated reuse structure.}
+The usefulness of the second version is also visible at the combination level.
+The trio
+\texttt{gene\_topic\_hamiltonian\_inverse\_design + gene\_topic\_many\_body\_spin\_chain + gene\_topic\_seed\_many\_body\_spin\_chain}
+recurs across $12$ tasks.
+This repeated reuse suggests that the gain does not come merely from increasing the nominal number of genes.
+It comes from preserving and routing compact combinations that continue to work.
+
+\end{document}
