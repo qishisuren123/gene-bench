@@ -106,7 +106,7 @@ These results suggest that the central problem in experience reuse is not how to
 \caption{
 Experience units for test-time control and their representative performance.
 (a) Three experience units with increasing control density: Skill-Full, a documentation-heavy package; Skill-Core, a compressed procedural unit; and Gene, a compact control-oriented representation.
-(b) Representative pass-rate change relative to baseline under the experimental pipeline. Despite containing less information, more compact and control-oriented experience units yield stronger test-time improvement, indicating that effectiveness depends on representation rather than content volume alone.
+(b) \blue{[UPDATE figure: New data (EX2) shows Skill-Core(+4.2pp) $>$ Gene(+2.8pp), Skill-Full(-3.5pp). Gene is no longer strictly best; the figure should show Gene as more token-efficient but slightly weaker in absolute terms. Token counts: Gene $\sim$230, Skill-Core $\sim$630, Skill-Full $\sim$2,572.]}
 }
 \label{fig:teaser}
 \end{figure}
@@ -125,7 +125,7 @@ Taken together, these studies reinforce a stronger assumption about reusable exp
 
 Our point of departure is to test this assumption directly. 
 As shown in~\cref{fig:teaser}(b), our preliminary experiments show that more complete skill representations do not reliably lead to better test-time improvement. 
-Specifically, \texttt{Skill-Core}, at roughly $300$ tokens, yields a \blue{$+3.8$pp (was $+6.0$pp)} gain over the baseline, whereas \texttt{Skill-Full}, at roughly $600$ tokens, \blue{degrades performance to $-3.5$pp (was $-6.7$pp)} relative to the baseline. 
+Specifically, \texttt{Skill-Core}, at roughly \blue{$630$ (was $300$)} tokens, yields a \blue{$+4.2$pp (was $+6.0$pp, EX2 data)} gain over the baseline, whereas \texttt{Skill-Full}, at roughly \blue{$2{,}572$ (was $600$)} tokens, \blue{degrades performance to $-3.5$pp (was $-6.7$pp)} relative to the baseline. 
 These results shift attention to experience representation: \emph{which representation of reusable experience can serve as an effective and evolvable test-time control signal for LLM-based task solving?}
 
 Building on this observation, this paper reexamines the experience object itself. 
@@ -228,7 +228,7 @@ d_{\text{aux}} = \{\texttt{api\_notes}, \texttt{examples}, \texttt{scripts}\}
 \end{equation}
 contains supplementary material for explanation, reference, and execution support. 
 This formulation matches our operational setup, in which \texttt{Skill-Core} corresponds to the main document alone, while \texttt{Skill-Full} includes both the main document and auxiliary components. 
-In our experimental setup, \texttt{Skill-Core} is approximately $300$ tokens, whereas \texttt{Skill-Full} expands to roughly $600$ tokens.
+In our experimental setup, \texttt{Skill-Core} is approximately \blue{$630$ (was $300$)} tokens, whereas \texttt{Skill-Full} expands to roughly \blue{$2{,}572$ (was $600$)} tokens.
 
 Under this view, procedural skills are valuable because they externalize experience in a stable and communicable form. 
 They make prior solutions easier to document, teach, maintain, and transfer across tasks. 
@@ -344,7 +344,7 @@ Two recurring failure modes are to treat \texttt{min\_distance} as a wavelength 
 \texttt{Skill-Full} extends \texttt{Skill-Core} with auxiliary materials such as \texttt{api\_notes}, \texttt{examples}, and \texttt{scripts}.
 
 \nbf{Strategy Gene.}
-The corresponding gene takes a compact control-oriented form:
+The corresponding gene takes a compact control-oriented form \blue{(G3 level, $\sim$230 tokens; note: G3 excludes AVOID pitfall steps, which are only in G4)}:
 \begin{quote}
 \small
 \texttt{<strategy-gene>} \\
@@ -397,7 +397,7 @@ As shown in~\cref{fig:skill_sparse_budget}(b), even after truncating skill-deriv
 The advantage of \texttt{Gene} therefore does not come from brevity alone, but from more efficient organization of task-critical information.
 
 \nbf{Additional text beyond \texttt{Skill-Core} does not reliably translate into benefit.}
-In our setup, \texttt{Skill-Core} corresponds to the main document alone, whereas \texttt{Skill-Full} includes both the main document and auxiliary components, expanding the object from roughly $300$ tokens to roughly $600$ tokens. 
+In our setup, \texttt{Skill-Core} corresponds to the main document alone, whereas \texttt{Skill-Full} includes both the main document and auxiliary components, expanding the object from roughly \blue{$630$ (was $300$)} tokens to roughly \blue{$2{,}572$ (was $600$)} tokens. 
 These auxiliary materials are useful for explanation, reference, and maintenance, but their design objective differs from that of model-facing inference-time control. 
 Once the few genuinely useful fragments are embedded in a larger documentation-heavy object, their effect is diluted by content that is weakly aligned with generation-time control.
 
@@ -901,7 +901,7 @@ where
 
 This abstraction matches the operational schema used in our Gene-Bench setup, where a gene is serialized with fields such as \texttt{type}, \texttt{schema\_version}, \texttt{id}, \texttt{signals\_match}, \texttt{summary}, \texttt{strategy}, \texttt{constraints}, \texttt{validation}, and \texttt{asset\_id}. 
 A representative example is a \texttt{<strategy-gene>} block containing domain keywords, a one-sentence summary, a short strategy list, and one or more \texttt{AVOID} items. 
-In our experiments, such genes are typically around $120$ tokens and are designed to provide control-relevant experience under limited inference budget.
+In our experiments, such genes are typically around \blue{$230$ (was $120$)} tokens and are designed to provide control-relevant experience under limited inference budget.
 
 \subsection{Capsule Objects}
 \label{app:gep_capsule}
@@ -1137,7 +1137,7 @@ The experiments compare three main experience forms: \texttt{Skill-Full}, \textt
 \texttt{Skill-Full} denotes the full skill package, including the main skill document together with auxiliary notes, examples, and scripts. 
 \texttt{Skill-Core} denotes the main skill document alone. 
 \texttt{Gene} is a distilled strategy template. 
-Their approximate lengths are 600, 300, and 120 tokens, respectively.
+Their approximate lengths are \blue{2,572 (was 600)}, \blue{630 (was 300)}, and \blue{230 (was 120)} tokens, respectively.
 
 Genes are serialized under the GEP schema with fields such as \texttt{type}, \texttt{schema\_version}, \texttt{id}, \texttt{signals\_match}, \texttt{summary}, \texttt{strategy}, \texttt{constraints}, \texttt{validation}, and \texttt{asset\_id}. 
 
