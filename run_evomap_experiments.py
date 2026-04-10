@@ -1826,6 +1826,171 @@ EX27_CONDITIONS = {
 }
 
 
+# --- EX28: 载体对比 (Attachment Test) ---
+# 研究问题：失败历史作为「记忆载体」时，Gene 是否比 Skill 或自由形式更有效？
+
+def _make_failure_history_text(scenario_id: str) -> str:
+    """
+    生成 2-3 句话的精选失败历史描述（正+负混合，模拟进化记忆附件）。
+    复用 make_curated_failures_prompt 内部逻辑，提取纯文本部分。
+    """
+    info = DOMAIN_INFO.get(scenario_id, {})
+    failures = info.get("failure_patterns", [])
+    gene = _load_gene(scenario_id)
+    pitfalls = gene.get("pitfalls", [])
+    # 取最典型的失败：DOMAIN_INFO 第一条 + gene pitfall 第一条
+    top_failures = []
+    if failures:
+        top_failures.append(failures[0])
+    if pitfalls:
+        top_failures.append(pitfalls[0])
+    if not top_failures and failures:
+        top_failures = failures[:2]
+
+    if not top_failures:
+        return (
+            "Previous attempts failed when input edge cases were not handled. "
+            "The fix was to validate inputs before processing. "
+            "Watch out for off-by-one errors in boundary conditions."
+        )
+
+    if len(top_failures) == 1:
+        return (
+            f"Previous attempts failed when: {top_failures[0]}. "
+            "The fix was to address this issue explicitly before proceeding. "
+            "Watch out for this pattern recurring in similar tasks."
+        )
+    return (
+        f"Previous attempts failed when: {top_failures[0]}. "
+        f"A second recurring issue was: {top_failures[1]}. "
+        "Watch out for these patterns — both caused failures in over 30% of past runs."
+    )
+
+
+def make_gene_with_failure_prompt(scenario_id: str) -> str:
+    """Gene G3 + 精选失败历史（Gene 作为载体）"""
+    gene_prompt = _get_gene_g3_prompt(scenario_id)
+    failure_text = _make_failure_history_text(scenario_id)
+    return (
+        f"{gene_prompt}\n\n"
+        "<failure-history>\n"
+        f"{failure_text}\n"
+        "</failure-history>\n\n"
+        "Take note of these past failures when implementing your solution."
+    )
+
+
+def make_skill_with_failure_prompt(scenario_id: str) -> str:
+    """Skill L1 (overview) + 精选失败历史（Skill 作为载体）"""
+    from gene_injector import inject_skill_section
+    skill_prompt = inject_skill_section(_get_skill_dir(scenario_id), "overview")
+    if not skill_prompt:
+        # 回退到完整 SKILL.md
+        from gene_injector import _inject_skill_l1
+        skill_prompt = _inject_skill_l1(_get_skill_dir(scenario_id))
+    failure_text = _make_failure_history_text(scenario_id)
+    return (
+        f"{skill_prompt}\n\n"
+        "<failure-history>\n"
+        f"{failure_text}\n"
+        "</failure-history>\n\n"
+        "Take note of these past failures when implementing your solution."
+    )
+
+
+def make_freeform_with_failure_prompt(scenario_id: str) -> str:
+    """自由形式上下文（朴素段落描述任务方向）+ 精选失败历史"""
+    info = DOMAIN_INFO.get(scenario_id, {})
+    domain = info.get("domain", "this domain")
+    gene = _load_gene(scenario_id)
+    summary = gene.get("summary", "")
+    signals = info.get("signals", [])
+
+    # 自由形式：普通段落，无 XML 结构，无 Gene 格式
+    freeform_text = (
+        f"This task involves {domain} analysis. "
+        f"{summary} " if summary else f"This task involves {domain} analysis. "
+    )
+    if signals:
+        freeform_text += f"Key concepts to keep in mind include {', '.join(signals[:4])}."
+
+    failure_text = _make_failure_history_text(scenario_id)
+    return (
+        f"{freeform_text}\n\n"
+        "<failure-history>\n"
+        f"{failure_text}\n"
+        "</failure-history>\n\n"
+        "Take note of these past failures when implementing your solution."
+    )
+
+
+EX28_CONDITIONS = {
+    "none":                  lambda sid: "",
+    "gene_alone":            lambda sid: _get_gene_g3_prompt(sid),
+    "gene_with_failure":     make_gene_with_failure_prompt,
+    "skill_with_failure":    make_skill_with_failure_prompt,
+    "freeform_with_failure": make_freeform_with_failure_prompt,
+}
+
+
+# --- EX29: 可编辑性 vs 静态 (Editable vs Static) ---
+# 研究问题：协议化（结构化）Gene 是否优于同内容的静态/无结构版本？
+
+def _make_gene_static_text(scenario_id: str) -> str:
+    """
+    将 Gene 结构化字段展平为纯散文段落，去掉所有 XML/JSON 标签。
+    模拟「将 Gene 内容嵌入 Word 文档」的静态效果。
+    """
+    gene = _load_gene(scenario_id)
+    if not gene:
+        return ""
+
+    keywords = gene.get("signals_match", gene.get("keywords", []))
+    summary = gene.get("summary", "")
+    strategy = gene.get("strategy", [])
+    pitfalls = gene.get("pitfalls", [])
+
+    parts = []
+    if keywords:
+        parts.append(f"Key domain concepts include: {', '.join(keywords)}.")
+    if summary:
+        parts.append(summary)
+    if strategy:
+        # 合并为流畅段落，不保留列表结构
+        strategy_prose = " Then, ".join(strategy)
+        parts.append(f"The recommended approach is to {strategy_prose}.")
+    if pitfalls:
+        pitfall_prose = "; also avoid ".join(pitfalls)
+        parts.append(f"Common pitfalls to avoid: {pitfall_prose}.")
+
+    return " ".join(parts)
+
+
+def make_gene_static_prompt(scenario_id: str) -> str:
+    """静态 Gene：与 G3 内容相同，但格式展平为纯文本段落（无 XML 结构）"""
+    static_text = _make_gene_static_text(scenario_id)
+    if not static_text:
+        return ""
+    return (
+        "Here is background guidance for this task:\n\n"
+        f"{static_text}"
+    )
+
+
+def make_skill_l1_for_ex29_prompt(scenario_id: str) -> str:
+    """Skill L1（SKILL.md 全文）作为对照：结构化但面向文档"""
+    from gene_injector import _inject_skill_l1
+    return _inject_skill_l1(_get_skill_dir(scenario_id))
+
+
+EX29_CONDITIONS = {
+    "none":        lambda sid: "",
+    "gene_g3":     lambda sid: _get_gene_g3_prompt(sid),
+    "gene_static": make_gene_static_prompt,
+    "skill_l1":    make_skill_l1_for_ex29_prompt,
+}
+
+
 # ── Trial 生成 ──
 
 def _generate_trials(experiment: str, conditions: dict, models: list, scenarios: list) -> list:
@@ -1901,6 +2066,12 @@ def generate_ex26_trials(models: list, scenarios: list) -> list:
 def generate_ex27_trials(models: list, scenarios: list) -> list:
     return _generate_trials("ex27", EX27_CONDITIONS, models, scenarios)
 
+def generate_ex28_trials(models: list, scenarios: list) -> list:
+    return _generate_trials("ex28", EX28_CONDITIONS, models, scenarios)
+
+def generate_ex29_trials(models: list, scenarios: list) -> list:
+    return _generate_trials("ex29", EX29_CONDITIONS, models, scenarios)
+
 
 # ── 所有实验条件映射 ──
 
@@ -1925,6 +2096,8 @@ ALL_CONDITION_MAPS = {
     "ex25": EX25_CONDITIONS,
     "ex26": EX26_CONDITIONS,
     "ex27": EX27_CONDITIONS,
+    "ex28": EX28_CONDITIONS,
+    "ex29": EX29_CONDITIONS,
 }
 
 # 实验分组
@@ -1933,6 +2106,7 @@ EXPERIMENT_GROUPS = {
     "phase3": ["ex14", "ex15", "ex16"],
     "phase4": ["ex17", "ex18", "ex19", "ex20", "ex21"],
     "skillprobe": ["ex22", "ex23", "ex24", "ex25", "ex26", "ex27"],
+    "evolutionprobe": ["ex28", "ex29"],
 }
 
 # 实验描述
@@ -1957,6 +2131,8 @@ EXPERIMENT_NAMES = {
     "ex25": "Format Repackaging",
     "ex26": "Evolution Narrative",
     "ex27": "Memory Source",
+    "ex28": "Attachment Test",
+    "ex29": "Editable vs Static",
 }
 
 # 实验 trial 生成器
@@ -1981,6 +2157,8 @@ EXPERIMENT_GENERATORS = {
     "ex25": generate_ex25_trials,
     "ex26": generate_ex26_trials,
     "ex27": generate_ex27_trials,
+    "ex28": generate_ex28_trials,
+    "ex29": generate_ex29_trials,
 }
 
 
@@ -2160,17 +2338,18 @@ ALL_EXPERIMENT_IDS = list(EXPERIMENT_NAMES.keys())
 
 def main():
     parser = argparse.ArgumentParser(
-        description="EvoMap 实验：EX8-EX27 共 20 个实验",
+        description="EvoMap 实验：EX8-EX29 共 22 个实验",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 实验分组:
-  phase2:    EX8-EX13 (记忆/探索/失败/角色/自我预判/框架)
-  phase3:    EX14-EX16 (失败真假/组合饱和/利害框架)
-  phase4:    EX17-EX21 (格式/进化/PE方法/复用/生态)
-  skillprobe: EX22-EX27 (Skill归因/截断/互补/重包装/叙事/记忆来源)
+  phase2:       EX8-EX13 (记忆/探索/失败/角色/自我预判/框架)
+  phase3:       EX14-EX16 (失败真假/组合饱和/利害框架)
+  phase4:       EX17-EX21 (格式/进化/PE方法/复用/生态)
+  skillprobe:   EX22-EX27 (Skill归因/截断/互补/重包装/叙事/记忆来源)
+  evolutionprobe: EX28-EX29 (载体对比/可编辑性)
 """)
     parser.add_argument("--experiment",
-                        choices=ALL_EXPERIMENT_IDS + ["all", "phase2", "phase3", "phase4", "skillprobe"],
+                        choices=ALL_EXPERIMENT_IDS + ["all", "phase2", "phase3", "phase4", "skillprobe", "evolutionprobe"],
                         default="all", help="Which experiment(s) to run")
     parser.add_argument("--models", type=str, default="gemini_pro,gemini_flash",
                         help="Comma-separated model list")

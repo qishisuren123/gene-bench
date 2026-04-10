@@ -93,7 +93,6 @@ We further show that representation is a first-order factor: format, framing, an
 \blue{[UPDATE abstract: effect sizes are much smaller on 45-scenario data (2--6pp vs 8--15pp). Core direction holds but claims need softening.]}
 Motivated by these findings, we introduce \emph{strategy genes}, a compact control-oriented experience representation.
 Genes are more effective, more structurally robust, and more reliably reusable than skill-style representations, while also providing a stronger substrate for test-time evolution.
-On CritPt, gene-evolved systems reach $18.57\%$ versus $9.1\%$ and $27.14\%$ versus $17.7\%$ for their paired base models, showing that iteratively refined genes can yield substantial gains beyond the underlying model.
 These results suggest that the central problem in experience reuse is not how to provide more experience, but how to represent reusable experience in a form suitable for control and evolution.
 \end{abstract}
 
@@ -731,49 +730,6 @@ This suggests that evolution narrative is best understood not as a new standalon
 
 
 
-\subsection{Gene as a Carrier for Test-Time Evolution}
-\label{sec:gene_tte}
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\textwidth]{figures/critpt.pdf}
-\caption{
-Accuracy (\%) on the CritPt benchmark.
-Two gene-evolved systems, \texttt{Evolver (Gene) 2026-02-16} and \texttt{Evolver (Gene) 2026-03-26}, substantially outperform their paired base models, Gemini 3 Pro Preview and Gemini 3.1 Pro Preview, by $+9.47$ and $+9.44$ percentage points, respectively.
-The stronger evolved version reaches $27.14\%$ accuracy, illustrating that gene-based test-time evolution can yield substantial gains beyond the underlying base model.
-}
-\label{fig:critpt_benchmark}
-\end{figure}
-
-We next ask a stronger question than one-shot test-time control: can \emph{Gene} also serve as a carrier for \emph{test-time evolution}, enabling iterative improvement across runs without changing the underlying base model?
-To study this, we construct an evolutionary agent using OpenClaw\footnote{\url{https://github.com/openclaw/openclaw}} as the host runtime and Evolver\footnote{\url{https://github.com/EvoMap/evolver}} as the evolution engine.
-At a high level, Evolver organizes self-evolution around structured Genes, accumulates causal experience through memory, and solidifies successful updates through validation-governed evolution events.
-As shown in~\cref{fig:critpt_benchmark}, both evolved agents substantially outperform their paired base models on CritPt benchmark~\cite{CritPt}: \texttt{Evolver (Gene) 2026-02-16} reaches $18.57\%$ versus $9.1\%$ for Gemini 3 Pro Preview, while \texttt{Evolver (Gene) 2026-03-26} reaches $27.14\%$ versus $17.7\%$ for Gemini 3.1 Pro Preview.
-Detailes are deferred to~\cref{app:critpt_evolution_details}.
-
-\nbf{Version A: \texttt{Evolver (Gene) 2026-02-16}.}
-We view the earlier version as \emph{memory-grounded} evolution: its gains mainly come from consolidating prior failures, execution traces, and corrective experience into reusable control units.
-A representative case is \texttt{gene\_gep\_repair\_from\_errors}, which is triggered by explicit failure signals such as \texttt{error}, \texttt{exception}, \texttt{failed}, and \texttt{unstable}, and follows a tightly constrained repair loop: structured diagnosis, blast-radius estimation, smallest reversible patch, validation, and solidification back into the Gene/Capsule store.
-The key point is that the gene does not merely remind the agent to ``be careful.'' It packages a reusable repair procedure.
-Once distilled, the same pattern can be invoked again in later runs instead of being rediscovered from scratch.
-This is the first sense in which gene iteration is useful: it converts past failures into reusable future-time control.
-
-\nbf{Version B: \texttt{Evolver (Gene) 2026-03-26}.}
-The later version reflects a broader, \emph{exploration-augmented} regime.
-Across $70$ tasks, the system uses $210$ gene slots and $36$ unique gene IDs, with \texttt{arxiv}-derived genes accounting for $148$ selections, compared with $44$ from \texttt{run\_experience} and $18$ from \texttt{builtin\_topic\_prior}. 
-The most revealing case is \texttt{gene\_topic\_hamiltonian\_inverse\_design}, the most frequent high-value run-experience gene in the full run, selected $25$ times.
-Its content is already strongly procedural: enumerate constraints such as commutation, normalization, and operator ordering; construct coefficients under those constraints; decompose many-body-chain problems into local terms while preserving index consistency; and prioritize numerical stability and reproducibility, ideally with symbolic and numerical checking.
-This shows what gene iteration preserves at a later stage: not just memories of failure, but compact task-facing solution procedures.
-Its practical value is visible in repeated high-frequency combinations, especially the recurring trio \texttt{gene\_topic\_hamiltonian\_inverse\_design + gene\_topic\_many\_body\_spin\_chain + gene\_topic\_seed\_many\_body\_spin\_chain}, which appears across 12 tasks.
-This is the second sense in which gene iteration is useful: the system is no longer only repairing itself, but also accumulating directly reusable solution patterns and deploying them repeatedly at scale.
-
-\nbf{Discussion.}
-Taken together, the two versions show that gene-based evolution is not merely becoming deeper, but broader.
-\texttt{Evolver (Gene) 2026-02-16} mainly consolidates failures into stable repair and validation loops, whereas \texttt{Evolver (Gene) 2026-03-26} further converts successful task experience into reusable domain-facing procedures.
-This distinction is central to our overall argument.
-If a reusable experience unit is to support test-time evolution, it must remain compact enough for inference-time injection, structured enough for targeted update, and practical enough to preserve procedures that continue to work in later problems.
-The CritPt results provide concrete evidence for this view: Gene is not only a control-oriented representation for one-shot inference, but also a persistent optimization interface through which reusable experience can accumulate, improve, and become increasingly useful through iteration.
-
 \subsection{Overall Findings}
 
 The retained analyses support six main findings.
@@ -797,9 +753,6 @@ The retained analyses support six main findings.
     \item \nbf{Genes provide a better substrate for experience-driven evolution.}
     Failure history, model-sensitive metacognitive cues, and evolution narrative become most effective when attached to a stable gene rather than appended as diffuse free-form context.
 
-    \item \nbf{Gene iteration scales from corrective routines to complex reusable strategies.}
-    Early iterations mainly distill failures into repair and validation loops, while later iterations can preserve increasingly structured, task-facing procedures, showing that gene-based test-time evolution can accumulate more complex strategic knowledge over time.
-
 \end{itemize}
 
 \section{Conclusion}
@@ -810,11 +763,6 @@ The retained analyses support six main findings.
 This paper asks a representation question that is often overlooked in experience reuse: not how to provide more prior experience at test time, but how to represent reusable experience so that it remains actionable under inference constraints.
 Through controlled experiments, we show that documentation-oriented skills are poorly aligned with test-time control, and that their useful signal is highly sparse.
 In contrast, strategy genes provide a more effective experience substrate: they are more compact, more structurally robust, and more reliably reusable across settings.
-
-Beyond one-shot control, we further show that genes support test-time evolution.
-When reusable experience is attached to a stable gene rather than appended as diffuse free-form context, iterative refinement becomes more reliable and more useful.
-Across two evolutionary runs, genes not only preserve corrective routines derived from failures, but also progressively accumulate more structured, task-facing procedures.
-This suggests that genes are not merely better prompts, but a more suitable interface for experience accumulation, controlled reuse, and iterative improvement.
 
 More broadly, our results suggest that experience reuse in LLM-based systems should be studied at the level of representation design rather than prompt packaging alone.
 We hope this work motivates further research on structured experience objects, bounded reuse, and evolution-oriented representations for test-time adaptation.
