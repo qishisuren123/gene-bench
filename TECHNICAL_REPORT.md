@@ -53,8 +53,8 @@ Each trial proceeds as follows:
 | Name | Tokens (approx.) | Description |
 |------|-----------------|-------------|
 | No context | 0 | Bare task description, no system prompt |
-| Gene G1 | ~35 | Keywords only |
-| Gene G2 | ~84 | Keywords + summary |
+| Gene G1 | ~88 | Keywords only |
+| Gene G2 | ~136 | Keywords + summary |
 | Gene G3 | ~230 | Keywords + summary + strategy (primary Gene representation) |
 | Gene G4 | ~375 | Full Gene template |
 | Skill L1 | ~630 | SKILL.md overview document |
@@ -568,7 +568,7 @@ The 45 scenarios span neuroscience, bioinformatics, geoscience, atmospheric scie
 ### S090 — noise_reduction
 
 **Domain**: Signal Processing  
-**Sub-tasks**: 12
+**Sub-tasks**: 12 (Pro), 13 (Flash) — model-dependent
 
 **Task**: Write a CLI script implementing Least Mean Squares (LMS) adaptive noise cancellation on a synthesized audio signal (440 Hz + 880 Hz sine waves + broadband noise at 8 kHz sample rate). The script must create a correlated reference noise signal, run the LMS filter, and compute SNR improvement, MSE reduction, and convergence rate.
 
@@ -997,8 +997,8 @@ This experiment tests a token-budget sweep from 0 (no guidance) to ~630 tokens (
 | Condition | Token Budget (approx.) | Content |
 |-----------|----------------------|---------|
 | `ex1_G0` | 0 | No context (baseline) |
-| `ex1_G1` | ~35 | Keywords only |
-| `ex1_G2` | ~84 | Keywords + summary |
+| `ex1_G1` | ~88 | Keywords only |
+| `ex1_G2` | ~136 | Keywords + summary |
 | `ex1_G3` | ~230 | Keywords + summary + strategy |
 | `ex1_G4` | ~375 | Full Gene template |
 | `ex1_L1` | ~630 | Skill overview document |
@@ -1019,8 +1019,8 @@ This experiment tests a token-budget sweep from 0 (no guidance) to ~630 tokens (
 **Key findings**:
 
 - There is no monotonic improvement as token budget increases for either model. The budget curve is flat and noisy, not a smooth improvement curve.
-- On Pro, G1 (keywords only, ~35 tokens) matches or exceeds G3, G4, and even approaches L1 on the `passed/total` metric. This suggests that minimal keyword cues may be nearly as effective as richer guidance for Pro.
-- On Flash, the pattern is reversed: G1 and G2 outperform G3 and G4 in `passed/total` (11–12 vs 10–11 scenarios fully passed). Going from ~84 to ~230 tokens does not help and may slightly hurt Flash.
+- On Pro, G1 (keywords only, ~88 tokens) matches or exceeds G3, G4, and even approaches L1 on the `passed/total` metric. This suggests that minimal keyword cues may be nearly as effective as richer guidance for Pro.
+- On Flash, the pattern is reversed: G1 and G2 outperform G3 and G4 in `passed/total` (11–12 vs 10–11 scenarios fully passed). Going from ~136 to ~230 tokens does not help and may slightly hurt Flash.
 - L1 achieves the highest `passed/total` for Pro (18/44) but only 10/45 for Flash, which is worse than G1 and G2. This further undermines the case for documentation-style guidance.
 - G2 on Pro shows the only partial dip (15/44 passed), suggesting that summary-without-strategy can occasionally conflict with the model's own approach.
 
