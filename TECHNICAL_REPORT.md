@@ -1183,7 +1183,7 @@ Note: Pro has 31–33 trials per condition (not 45) because EX5 uses a paired sc
 - On Flash, `ex5_2x_complementary` produces the worst result (41.1%, 6/45) — a sharp drop from the single-Gene baseline (46.6%, 10/45). This suggests that two simultaneous Genes may overwhelm Flash's context integration ability.
 - `ex5_2x_conflicting` is slightly below `ex5_2x_complementary` for Pro (48.1% vs 52.4%) but essentially matches the single-Gene condition on Flash (44.7% vs 46.6%). Conflicting Genes do not catastrophically degrade performance.
 - `ex5_3x_complementary` does not outperform `ex5_2x_complementary` on Pro and performs similarly to `ex5_single` on Flash. Three Genes provide diminishing returns beyond two.
-- The asymmetry between Pro and Flash for `ex5_2x_complementary` (best for Pro, worst for Flash) is the largest within-experiment model split in the entire dataset and warrants further investigation.
+- The asymmetry between Pro and Flash for `ex5_2x_complementary` is the most striking directional reversal in the dataset: it is simultaneously the best Pro condition by avg pass rate (52.4%, 13/33 passed) and the worst Flash condition by scenarios fully passed (41.1%, 6/45). The same guidance that most helps Pro most hurts Flash.
 
 ---
 
@@ -1419,7 +1419,7 @@ EOF
 | Gene's structured format, not content, drives benefit | EX29: `gene_static` (same content, no XML) drops below baseline | Pro: 53.4%/17 vs 60.5%/19 for structured Gene |
 | Gene resists content perturbations (stale paradigm even helps) | EX3: stale paradigm (+5.6 pp Pro, +6.2 pp Flash) | Most mutants within 1–2 scenarios of clean Gene |
 | Failure warnings alone are highly effective for Flash | EX9: `failure_warnings` achieves 15/45 (best of any non-Pro condition) | Flash: 52.0% vs 41.8% baseline |
-| Multi-Gene helps Pro but hurts Flash | EX5: `ex5_2x_complementary` Pro 13/33 vs Flash 6/45 | Largest model split in any single experiment |
+| Multi-Gene helps Pro but hurts Flash | EX5: `ex5_2x_complementary` Pro 13/33 vs Flash 6/45 | Best Pro / worst Flash directional reversal |
 
 ---
 
